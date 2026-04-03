@@ -1,37 +1,644 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chřibský průvodce - Admin</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chřibský průvodce — Administrace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --forest: #1B4332;
+  --forest-light: #2D6A4F;
+  --moss: #52796F;
+  --gold: #CBA41E;
+  --gold-light: #E8D577;
+  --cream: #FAF8F0;
+  --stone: #6B7280;
+  --danger: #DC2626;
+  --danger-light: #FEE2E2;
+  --success: #059669;
+  --success-light: #D1FAE5;
+  --shadow: 0 4px 24px rgba(27,67,50,.12);
+  --radius: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: #F0EDE6;
+  color: var(--forest);
+  min-height: 100vh;
+}
+h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, var(--forest) 0%, var(--forest-light) 50%, var(--moss) 100%);
+  padding: 2rem;
+}
+.login-card {
+  background: var(--cream);
+  border-radius: 16px;
+  padding: 3rem 2.5rem;
+  width: 380px;
+  max-width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  text-align: center;
+}
+.login-card h1 { font-size: 1.5rem; color: var(--forest); margin-bottom: .4rem; }
+.login-card .subtitle { color: var(--stone); font-size: .9rem; margin-bottom: 2rem; }
+.login-card .logo-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+.login-card input {
+  width: 100%; padding: .75rem 1rem; border: 2px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: .95rem; margin-bottom: .8rem; transition: border .2s;
+}
+.login-card input:focus { outline: none; border-color: var(--forest); }
+.login-card button {
+  width: 100%; padding: .85rem; background: var(--forest); color: white; border: none;
+  border-radius: 8px; font-family: inherit; font-size: 1rem; font-weight: 700;
+  cursor: pointer; margin-top: .5rem; transition: background .2s;
+}
+.login-card button:hover { background: var(--forest-light); }
+.login-error { color: var(--danger); font-size: .85rem; margin-top: .8rem; display: none; }
+.app { display: none; }
+.app.visible { display: block; }
+.login-screen.hidden { display: none; }
+.topbar {
+  background: var(--forest); color: white; padding: 1rem 2rem;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.15);
+}
+.topbar h1 { font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
+.topbar-right { display: flex; align-items: center; gap: 1rem; }
+.topbar-user { font-size: .85rem; opacity: .8; }
+.btn-logout {
+  background: rgba(255,255,255,.15); color: white; border: none; padding: .45rem 1rem;
+  border-radius: 6px; font-family: inherit; font-size: .85rem; cursor: pointer; transition: background .2s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.25); }
+.tabs {
+  display: flex; background: white; border-bottom: 2px solid #e5e5e5;
+  padding: 0 2rem; overflow-x: auto;
+}
+.tab {
+  padding: 1rem 1.5rem; background: none; border: none; font-family: inherit;
+  font-size: .9rem; font-weight: 600; color: var(--stone); cursor: pointer;
+  border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all .2s;
+}
+.tab:hover { color: var(--forest); }
+.tab.active { color: var(--forest); border-bottom-color: var(--gold); }
+.content { max-width: 900px; margin: 0 auto; padding: 2rem; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.card {
+  background: white; border-radius: var(--radius); padding: 1.5rem;
+  box-shadow: var(--shadow); margin-bottom: 1.2rem;
+}
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .8rem; }
+.card-title { font-size: 1.05rem; }
+.card-meta { font-size: .82rem; color: var(--stone); margin-top: .2rem; }
+.card-actions { display: flex; gap: .4rem; }
+.badge { display: inline-block; padding: .2rem .6rem; border-radius: 4px; font-size: .75rem; font-weight: 700; }
+.badge-upcoming { background: var(--success-light); color: var(--success); }
+.badge-past { background: #F3F4F6; color: var(--stone); }
+.badge-partner { background: #FEF3C7; color: #92400E; }
+.btn {
+  padding: .55rem 1.2rem; border: none; border-radius: 6px; font-family: inherit;
+  font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .15s;
+  display: inline-flex; align-items: center; gap: .35rem;
+}
+.btn-primary { background: var(--forest); color: white; }
+.btn-primary:hover { background: var(--forest-light); }
+.btn-gold { background: var(--gold); color: var(--forest); }
+.btn-gold:hover { background: var(--gold-light); }
+.btn-outline { background: white; color: var(--forest); border: 2px solid #ddd; }
+.btn-outline:hover { border-color: var(--forest); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #B91C1C; }
+.btn-sm { padding: .35rem .8rem; font-size: .8rem; }
+.form-group { margin-bottom: 1.2rem; }
+.form-group label {
+  display: block; font-size: .82rem; font-weight: 700; color: var(--forest);
+  margin-bottom: .35rem; text-transform: uppercase; letter-spacing: .04em;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: .65rem .85rem; border: 2px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: .92rem; color: var(--forest); background: white; transition: border .2s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--forest); }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-hint { font-size: .75rem; color: var(--stone); margin-top: .25rem; }
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(27,67,50,.5); backdrop-filter: blur(4px);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: 3rem 1rem; z-index: 200; overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 14px; width: 600px; max-width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,.25); animation: slideUp .3s ease;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header {
+  background: var(--forest); color: white; padding: 1rem 1.5rem;
+  display: flex; justify-content: space-between; align-items: center; border-radius: 14px 14px 0 0;
+}
+.modal-header h3 { font-size: 1.05rem; }
+.modal-close { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; opacity: .7; }
+.modal-close:hover { opacity: 1; }
+.modal-body { padding: 1.5rem; }
+.modal-footer { padding: 0 1.5rem 1.5rem; display: flex; justify-content: flex-end; gap: .6rem; }
+.participant {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .6rem 0; border-bottom: 1px solid #f0f0f0; font-size: .9rem;
+}
+.participant:last-child { border-bottom: none; }
+.participant-count { color: var(--stone); font-size: .82rem; }
+.stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: white; border-radius: var(--radius); padding: 1.2rem; box-shadow: var(--shadow); text-align: center; }
+.stat-value { font-size: 2rem; font-weight: 900; color: var(--forest); font-family: 'Merriweather', serif; }
+.stat-label { font-size: .8rem; color: var(--stone); margin-top: .2rem; }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--stone); }
+.empty-state .icon { font-size: 3rem; margin-bottom: .5rem; }
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem; background: var(--forest); color: white;
+  padding: .8rem 1.4rem; border-radius: 8px; font-size: .9rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2); z-index: 300;
+  transform: translateY(100px); opacity: 0; transition: all .3s ease;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { background: var(--danger); }
+.loading { text-align: center; padding: 3rem; color: var(--stone); }
+.spinner {
+  display: inline-block; width: 32px; height: 32px; border: 3px solid #ddd;
+  border-top-color: var(--forest); border-radius: 50%; animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.app-footer { text-align: center; padding: 2rem; font-size: .8rem; color: var(--stone); border-top: 1px solid #e5e5e5; margin-top: 2rem; }
+@media (max-width: 640px) {
+  .topbar { padding: .8rem 1rem; }
+  .topbar h1 { font-size: 1rem; }
+  .tabs { padding: 0 .5rem; }
+  .tab { padding: .8rem 1rem; font-size: .82rem; }
+  .content { padding: 1rem; }
+  .form-row { grid-template-columns: 1fr; }
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Chřibský průvodce - Administrace</h1>
-  </header>
+  <!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <span class="logo-icon">🏔️</span>
+    <h1>Chřibský průvodce</h1>
+    <p class="subtitle">Administrační panel</p>
+    <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
+    <input type="password" id="loginPassword" placeholder="Heslo" autocomplete="current-password">
+    <button onclick="handleLogin()">Přihlásit se</button>
+    <p class="login-error" id="loginError"></p>
+  </div>
+</div>
 
-  <main>
-    <section>
-      <h2>Správa akcí</h2>
-      <!-- Formulář pro přidání/úpravu/smazání akce -->
-    </section>
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <h1>🏔️ Chřibský průvodce — Admin</h1>
+    <div class="topbar-right">
+      <span class="topbar-user" id="userEmail"></span>
+      <button class="btn-logout" onclick="handleLogout()">Odhlásit</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Přehled</button>
+    <button class="tab" data-tab="events" onclick="switchTab('events')">🥾 Akce</button>
+    <button class="tab" data-tab="pois" onclick="switchTab('pois')">📍 Místa</button>
+    <button class="tab" data-tab="guide" onclick="switchTab('guide')">👤 Průvodce</button>
+    <button class="tab" data-tab="bookings" onclick="switchTab('bookings')">📋 Přihlášení</button>
+  </div>
+  <div class="content">
+    <!-- DASHBOARD -->
+    <div class="tab-panel active" id="panel-dashboard">
+      <div class="stats-bar" id="statsBar">
+        <div class="stat-card"><div class="stat-value" id="statEvents">—</div><div class="stat-label">Nadcházející akce</div></div>
+        <div class="stat-card"><div class="stat-value" id="statPois">—</div><div class="stat-label">Míst v databázi</div></div>
+        <div class="stat-card"><div class="stat-value" id="statBookings">—</div><div class="stat-label">Přihlášení celkem</div></div>
+        <div class="stat-card"><div class="stat-value" id="statUsers">—</div><div class="stat-label">Registrovaných</div></div>
+      </div>
+      <div class="card">
+        <h3>Nejbližší akce</h3>
+        <div id="upcomingList" style="margin-top:1rem;"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+    <!-- EVENTS -->
+    <div class="tab-panel" id="panel-events">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
+        <h2>Správa akcí</h2>
+        <button class="btn btn-primary" onclick="openEventModal()">+ Nová akce</button>
+      </div>
+      <div id="eventsList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+    <!-- POIS -->
+    <div class="tab-panel" id="panel-pois">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
+        <h2>Správa míst</h2>
+        <button class="btn btn-primary" onclick="openPoiModal()">+ Nové místo</button>
+      </div>
+      <div id="poisList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+    <!-- GUIDE -->
+    <div class="tab-panel" id="panel-guide">
+      <h2 style="margin-bottom:1.2rem;">Profil průvodce</h2>
+      <div class="card">
+        <div class="form-group"><label>Jméno</label><input type="text" id="guideName" value="Pavel Zrna"></div>
+        <div class="form-group"><label>Bio / O průvodci</label><textarea id="guideBio" rows="5"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label>Telefon</label><input type="tel" id="guidePhone" value="+420 723 680 737"></div>
+          <div class="form-group"><label>E-mail</label><input type="email" id="guideEmail" value="chribsky.pruvodce@gmail.com"></div>
+        </div>
+        <div class="form-group">
+          <label>URL fotografie</label>
+          <input type="url" id="guidePhoto" placeholder="https://...">
+          <p class="form-hint">Odkaz na profilovou fotku průvodce</p>
+        </div>
+        <button class="btn btn-primary" onclick="saveGuide()">Uložit profil</button>
+      </div>
+    </div>
+    <!-- BOOKINGS -->
+    <div class="tab-panel" id="panel-bookings">
+      <h2 style="margin-bottom:1.2rem;">Přihlášení na akce</h2>
+      <div id="bookingsList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+  <footer class="app-footer">&copy; 2026 Pavel Zrna, IČO: 67578969 — Všechna práva vyhrazena</footer>
+</div>
 
-    <section>
-      <h2>Správa míst</h2>
-      <!-- Formulář pro přidání/úpravu/smazání místa -->
-    </section>
+<!-- EVENT MODAL -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="eventModalTitle">Nová akce</h3><button class="modal-close" onclick="closeModal('eventModal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="eventId">
+      <div class="form-group"><label>Název akce</label><input type="text" id="eventName" placeholder="Jarní výšlap na Brdo"></div>
+      <div class="form-group"><label>Popis</label><textarea id="eventDesc" placeholder="Popis výšlapu..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Datum</label><input type="date" id="eventDate"></div>
+        <div class="form-group"><label>Čas začátku</label><input type="time" id="eventTime" value="09:00"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Čas konce (volitelné)</label><input type="time" id="eventTimeEnd"></div>
+        <div class="form-group"><label>Kapacita</label><input type="number" id="eventCapacity" value="20" min="1"></div>
+      </div>
+      <div class="form-group"><label>Místo srazu</label><input type="text" id="eventMeetingPoint" placeholder="Parkoviště u rozhledny Brdo"></div>
+      <div class="form-row">
+        <div class="form-group"><label>GPS šířka (lat)</label><input type="number" step="any" id="eventLat" placeholder="49.1234"></div>
+        <div class="form-group"><label>GPS délka (lng)</label><input type="number" step="any" id="eventLng" placeholder="17.3456"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Vzdálenost (km)</label><input type="number" step="0.1" id="eventDistance" placeholder="12.5"></div>
+        <div class="form-group"><label>Obtížnost</label><select id="eventDifficulty"><option value="easy">Snadná</option><option value="medium" selected>Střední</option><option value="hard">Těžká</option></select></div>
+      </div>
+      <div class="form-group"><label>URL obrázku (volitelné)</label><input type="url" id="eventImage" placeholder="https://..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('eventModal')">Zrušit</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Uložit akci</button>
+    </div>
+  </div>
+</div>
 
-    <section>
-      <h2>Profil průvodce</h2>
-      <!-- Formulář pro úpravu průvodcovského profilu -->
-    </section>
-  </main>
+<!-- POI MODAL -->
+<div class="modal-overlay" id="poiModal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="poiModalTitle">Nové místo</h3><button class="modal-close" onclick="closeModal('poiModal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="poiId">
+      <div class="form-group"><label>Název místa</label><input type="text" id="poiName" placeholder="Rozhledna Brdo"></div>
+      <div class="form-group"><label>Popis</label><textarea id="poiDesc" placeholder="Popis místa..."></textarea></div>
+      <div class="form-group"><label>Kategorie</label>
+        <select id="poiCategory">
+          <option value="lookout">Rozhledny</option><option value="castle">Hrady a zříceniny</option>
+          <option value="spring">Studánky</option><option value="church">Kostely a kaple</option>
+          <option value="memorial">Památníky</option><option value="nature">Příroda</option>
+          <option value="rock">Skály</option><option value="highway">Dálnice (zříceniny)</option>
+          <option value="accommodation">Ubytování</option><option value="restaurant">Restaurace</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>GPS šířka (lat)</label><input type="number" step="any" id="poiLat" placeholder="49.1234"></div>
+        <div class="form-group"><label>GPS délka (lng)</label><input type="number" step="any" id="poiLng" placeholder="17.3456"></div>
+      </div>
+      <div class="form-group"><label>URL obrázku (volitelné)</label><input type="url" id="poiImage" placeholder="https://..."></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:.6rem;">
+        <input type="checkbox" id="poiPartner" style="width:auto;">
+        <label for="poiPartner" style="margin:0;text-transform:none;font-size:.9rem;">Partnerské místo (PARTNER badge)</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('poiModal')">Zrušit</button>
+      <button class="btn btn-primary" onclick="savePoi()">Uložit místo</button>
+    </div>
+  </div>
+</div>
 
-  <footer>
-    <p>&copy; 2023 Chřibský průvodce</p>
-  </footer>
+<!-- BOOKINGS DETAIL MODAL -->
+<div class="modal-overlay" id="bookingsModal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="bookingsModalTitle">Přihlášení</h3><button class="modal-close" onclick="closeModal('bookingsModal')">&times;</button></div>
+    <div class="modal-body" id="bookingsModalBody"></div>
+  </div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="script.js"></script>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://eqilmetmujdgzidvrjuh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxaWxtZXRtdWpkZ3ppZHZyanVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTA2NzEsImV4cCI6MjA5MDEyNjY3MX0._87V0SKDRCRJONbgHvIYA_FlrBVMZyx8_kCcz1N5DEk';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// AUTH
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+  if (!email || !password) { errorEl.textContent = 'Vyplňte e-mail a heslo'; errorEl.style.display = 'block'; return; }
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    showApp(data.user);
+  } catch (err) { errorEl.textContent = 'Neplatné přihlašovací údaje'; errorEl.style.display = 'block'; }
+}
+async function handleLogout() {
+  await db.auth.signOut();
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginPassword').value = '';
+}
+async function checkSession() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) showApp(session.user);
+}
+function showApp(user) {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('userEmail').textContent = user.email;
+  loadDashboard(); loadEvents(); loadPois(); loadGuide(); loadBookings();
+}
+document.getElementById('loginPassword').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+// TABS
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+}
+
+// MODAL & TOAST
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// DASHBOARD
+async function loadDashboard() {
+  const now = new Date().toISOString().split('T')[0];
+  const [eventsRes, poisRes, bookingsRes, usersRes] = await Promise.all([
+    db.from('events').select('*', { count: 'exact' }).gte('date', now),
+    db.from('pois').select('*', { count: 'exact' }),
+    db.from('bookings').select('*', { count: 'exact' }),
+    db.from('profiles').select('*', { count: 'exact' }),
+  ]);
+  document.getElementById('statEvents').textContent = eventsRes.count ?? 0;
+  document.getElementById('statPois').textContent = poisRes.count ?? 0;
+  document.getElementById('statBookings').textContent = bookingsRes.count ?? 0;
+  document.getElementById('statUsers').textContent = usersRes.count ?? 0;
+  const { data: upcoming } = await db.from('events').select('*').gte('date', now).order('date').limit(5);
+  const el = document.getElementById('upcomingList');
+  if (!upcoming || upcoming.length === 0) { el.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>Žádné nadcházející akce</p></div>'; return; }
+  el.innerHTML = upcoming.map(e => `
+    <div class="participant"><div><strong>${esc(e.title)}</strong>
+    <div style="color:var(--stone);font-size:.82rem;">${formatDate(e.date)} ${e.time_start || ''}${e.time_end ? ' — ' + e.time_end : ''}</div>
+    </div><span class="badge badge-upcoming">Nadcházející</span></div>`).join('');
+}
+
+// EVENTS
+let allEvents = [];
+async function loadEvents() {
+  const { data, error } = await db.from('events').select('*').order('date', { ascending: false });
+  if (error) { showToast('Chyba načítání akcí', true); return; }
+  allEvents = data || []; renderEvents();
+}
+function renderEvents() {
+  const now = new Date().toISOString().split('T')[0];
+  const el = document.getElementById('eventsList');
+  if (allEvents.length === 0) { el.innerHTML = '<div class="empty-state"><div class="icon">🥾</div><p>Zatím žádné akce</p></div>'; return; }
+  el.innerHTML = allEvents.map(e => {
+    const isPast = e.date < now;
+    return `<div class="card"><div class="card-header"><div>
+      <h4 class="card-title">${esc(e.title)}</h4>
+      <div class="card-meta">${formatDate(e.date)} ${e.time_start || ''}${e.time_end ? ' — ' + e.time_end : ''} · ${e.distance_km ? e.distance_km + ' km' : ''} · ${diffLabel(e.difficulty)}</div>
+    </div><div class="card-actions"><span class="badge ${isPast ? 'badge-past' : 'badge-upcoming'}">${isPast ? 'Proběhlá' : 'Nadcházející'}</span></div></div>
+    <p style="font-size:.9rem;color:var(--stone);margin-bottom:.8rem;">${esc(e.description || '').substring(0, 150)}${(e.description||'').length > 150 ? '…' : ''}</p>
+    <div class="card-actions">
+      <button class="btn btn-outline btn-sm" onclick="editEvent('${e.id}')">✏️ Upravit</button>
+      <button class="btn btn-outline btn-sm" onclick="viewBookings('${e.id}', '${esc(e.title)}')">📋 Přihlášení</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteEvent('${e.id}')">🗑️ Smazat</button>
+    </div></div>`;
+  }).join('');
+}
+function openEventModal(eventData = null) {
+  document.getElementById('eventModalTitle').textContent = eventData ? 'Upravit akci' : 'Nová akce';
+  document.getElementById('eventId').value = eventData?.id || '';
+  document.getElementById('eventName').value = eventData?.title || '';
+  document.getElementById('eventDesc').value = eventData?.description || '';
+  document.getElementById('eventDate').value = eventData?.date || '';
+  document.getElementById('eventTime').value = eventData?.time_start || '09:00';
+  document.getElementById('eventTimeEnd').value = eventData?.time_end || '';
+  document.getElementById('eventCapacity').value = eventData?.capacity || 20;
+  document.getElementById('eventMeetingPoint').value = eventData?.meeting_point || '';
+  document.getElementById('eventLat').value = eventData?.meeting_lat || '';
+  document.getElementById('eventLng').value = eventData?.meeting_lng || '';
+  document.getElementById('eventDistance').value = eventData?.distance_km || '';
+  document.getElementById('eventDifficulty').value = eventData?.difficulty || 'medium';
+  document.getElementById('eventImage').value = eventData?.image_url || '';
+  openModal('eventModal');
+}
+async function editEvent(id) { const ev = allEvents.find(e => e.id === id); if (ev) openEventModal(ev); }
+async function saveEvent() {
+  const id = document.getElementById('eventId').value;
+  const payload = {
+    title: document.getElementById('eventName').value.trim(),
+    description: document.getElementById('eventDesc').value.trim(),
+    date: document.getElementById('eventDate').value,
+    time_start: document.getElementById('eventTime').value,
+    time_end: document.getElementById('eventTimeEnd').value || null,
+    capacity: parseInt(document.getElementById('eventCapacity').value) || 20,
+    meeting_point: document.getElementById('eventMeetingPoint').value.trim(),
+    meeting_lat: parseFloat(document.getElementById('eventLat').value) || null,
+    meeting_lng: parseFloat(document.getElementById('eventLng').value) || null,
+    distance_km: parseFloat(document.getElementById('eventDistance').value) || null,
+    difficulty: document.getElementById('eventDifficulty').value,
+    image_url: document.getElementById('eventImage').value.trim() || null,
+  };
+  if (!payload.title || !payload.date) { showToast('Vyplňte název a datum', true); return; }
+  let error;
+  if (id) { ({ error } = await db.from('events').update(payload).eq('id', id)); }
+  else { ({ error } = await db.from('events').insert(payload)); }
+  if (error) { showToast('Chyba: ' + error.message, true); return; }
+  showToast(id ? 'Akce upravena' : 'Akce vytvořena');
+  closeModal('eventModal'); loadEvents(); loadDashboard();
+}
+async function deleteEvent(id) {
+  if (!confirm('Opravdu smazat tuto akci?')) return;
+  const { error } = await db.from('events').delete().eq('id', id);
+  if (error) { showToast('Chyba mazání', true); return; }
+  showToast('Akce smazána'); loadEvents(); loadDashboard();
+}
+
+// POIS
+let allPois = [];
+async function loadPois() {
+  const { data, error } = await db.from('pois').select('*').order('name');
+  if (error) { showToast('Chyba načítání míst', true); return; }
+  allPois = data || []; renderPois();
+}
+function renderPois() {
+  const el = document.getElementById('poisList');
+  if (allPois.length === 0) { el.innerHTML = '<div class="empty-state"><div class="icon">📍</div><p>Zatím žádná místa</p></div>'; return; }
+  el.innerHTML = allPois.map(p => `
+    <div class="card"><div class="card-header"><div>
+      <h4 class="card-title">${catEmoji(p.category_id)} ${esc(p.name)}</h4>
+      <div class="card-meta">${catLabel(p.category_id)} · ${p.latitude?.toFixed(4) || '?'}, ${p.longitude?.toFixed(4) || '?'}</div>
+    </div><div class="card-actions">${p.is_partner ? '<span class="badge badge-partner">PARTNER</span>' : ''}</div></div>
+    <p style="font-size:.9rem;color:var(--stone);margin-bottom:.8rem;">${esc(p.description || '').substring(0, 120)}${(p.description||'').length > 120 ? '…' : ''}</p>
+    <div class="card-actions">
+      <button class="btn btn-outline btn-sm" onclick="editPoi('${p.id}')">✏️ Upravit</button>
+      <button class="btn btn-danger btn-sm" onclick="deletePoi('${p.id}')">🗑️ Smazat</button>
+    </div></div>`).join('');
+}
+function openPoiModal(poiData = null) {
+  document.getElementById('poiModalTitle').textContent = poiData ? 'Upravit místo' : 'Nové místo';
+  document.getElementById('poiId').value = poiData?.id || '';
+  document.getElementById('poiName').value = poiData?.name || '';
+  document.getElementById('poiDesc').value = poiData?.description || '';
+  document.getElementById('poiCategory').value = poiData?.category_id || 'lookout';
+  document.getElementById('poiLat').value = poiData?.latitude || '';
+  document.getElementById('poiLng').value = poiData?.longitude || '';
+  document.getElementById('poiImage').value = poiData?.image_url || '';
+  document.getElementById('poiPartner').checked = poiData?.is_partner || false;
+  openModal('poiModal');
+}
+async function editPoi(id) { const p = allPois.find(x => x.id === id); if (p) openPoiModal(p); }
+async function savePoi() {
+  const id = document.getElementById('poiId').value;
+  const payload = {
+    name: document.getElementById('poiName').value.trim(),
+    description: document.getElementById('poiDesc').value.trim(),
+    category_id: document.getElementById('poiCategory').value,
+    latitude: parseFloat(document.getElementById('poiLat').value) || null,
+    longitude: parseFloat(document.getElementById('poiLng').value) || null,
+    image_url: document.getElementById('poiImage').value.trim() || null,
+    is_partner: document.getElementById('poiPartner').checked,
+  };
+  if (!payload.name) { showToast('Vyplňte název místa', true); return; }
+  let error;
+  if (id) { ({ error } = await db.from('pois').update(payload).eq('id', id)); }
+  else { ({ error } = await db.from('pois').insert(payload)); }
+  if (error) { showToast('Chyba: ' + error.message, true); return; }
+  showToast(id ? 'Místo upraveno' : 'Místo vytvořeno');
+  closeModal('poiModal'); loadPois(); loadDashboard();
+}
+async function deletePoi(id) {
+  if (!confirm('Opravdu smazat toto místo?')) return;
+  const { error } = await db.from('pois').delete().eq('id', id);
+  if (error) { showToast('Chyba mazání', true); return; }
+  showToast('Místo smazáno'); loadPois(); loadDashboard();
+}
+
+// GUIDE
+async function loadGuide() {
+  const { data } = await db.from('profiles').select('*').eq('role', 'guide').single();
+  if (data) {
+    document.getElementById('guideName').value = data.full_name || '';
+    document.getElementById('guideBio').value = data.bio || '';
+    document.getElementById('guidePhone').value = data.phone || '';
+    document.getElementById('guideEmail').value = data.contact_email || '';
+    document.getElementById('guidePhoto').value = data.avatar_url || '';
+  }
+}
+async function saveGuide() {
+  const payload = {
+    full_name: document.getElementById('guideName').value.trim(),
+    bio: document.getElementById('guideBio').value.trim(),
+    phone: document.getElementById('guidePhone').value.trim(),
+    contact_email: document.getElementById('guideEmail').value.trim(),
+    avatar_url: document.getElementById('guidePhoto').value.trim() || null,
+  };
+  const { error } = await db.from('profiles').update(payload).eq('role', 'guide');
+  if (error) { showToast('Chyba: ' + error.message, true); return; }
+  showToast('Profil uložen');
+}
+
+// BOOKINGS
+async function loadBookings() {
+  const { data, error } = await db.from('bookings').select('*, events(title, date)').order('created_at', { ascending: false });
+  if (error) { showToast('Chyba načítání přihlášení', true); return; }
+  const el = document.getElementById('bookingsList');
+  if (!data || data.length === 0) { el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Zatím žádná přihlášení</p></div>'; return; }
+  const grouped = {};
+  data.forEach(b => {
+    const key = b.event_id;
+    if (!grouped[key]) grouped[key] = { title: b.events?.title || 'Neznámá akce', date: b.events?.date, bookings: [] };
+    grouped[key].bookings.push(b);
+  });
+  el.innerHTML = Object.entries(grouped).map(([eventId, g]) => `
+    <div class="card"><div class="card-header"><div>
+      <h4 class="card-title">${esc(g.title)}</h4>
+      <div class="card-meta">${formatDate(g.date)} · ${g.bookings.length} přihlášení · ${g.bookings.reduce((s, b) => s + (b.participant_count || 1), 0)} osob</div>
+    </div></div>
+    ${g.bookings.map(b => `<div class="participant"><div><strong>${esc(b.name)}</strong>
+      <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">${esc(b.phone || '')}</span></div>
+      <div class="participant-count">${b.participant_count || 1} ${(b.participant_count || 1) === 1 ? 'osoba' : (b.participant_count <= 4 ? 'osoby' : 'osob')}</div></div>`).join('')}
+    </div>`).join('');
+}
+async function viewBookings(eventId, title) {
+  document.getElementById('bookingsModalTitle').textContent = 'Přihlášení — ' + title;
+  const { data } = await db.from('bookings').select('*').eq('event_id', eventId).order('created_at');
+  const body = document.getElementById('bookingsModalBody');
+  if (!data || data.length === 0) { body.innerHTML = '<div class="empty-state"><p>Zatím nikdo přihlášen</p></div>'; }
+  else {
+    const totalPersons = data.reduce((s, b) => s + (b.participant_count || 1), 0);
+    body.innerHTML = `<p style="margin-bottom:1rem;color:var(--stone);">${data.length} přihlášení · ${totalPersons} osob celkem</p>
+      ${data.map(b => `<div class="participant"><div><strong>${esc(b.name)}</strong>
+        <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">📞 ${esc(b.phone || '—')}</span></div>
+        <div class="participant-count">${b.participant_count || 1}×</div></div>`).join('')}`;
+  }
+  openModal('bookingsModal');
+}
+
+// HELPERS
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function formatDate(d) { if (!d) return ''; const [y, m, day] = d.split('-'); return `${day}. ${m}. ${y}`; }
+function diffLabel(d) { return { easy: '🟢 Snadná', medium: '🟡 Střední', hard: '🔴 Těžká' }[d] || d || ''; }
+const CAT_MAP = {
+  lookout: { emoji: '🗼', label: 'Rozhledny' }, castle: { emoji: '🏰', label: 'Hrady' },
+  spring: { emoji: '💧', label: 'Studánky' }, church: { emoji: '⛪', label: 'Kostely' },
+  memorial: { emoji: '🪨', label: 'Památníky' }, nature: { emoji: '🌳', label: 'Příroda' },
+  rock: { emoji: '🪨', label: 'Skály' }, highway: { emoji: '🛤️', label: 'Dálnice' },
+  accommodation: { emoji: '🏠', label: 'Ubytování' }, restaurant: { emoji: '🍽️', label: 'Restaurace' },
+};
+function catEmoji(id) { return CAT_MAP[id]?.emoji || '📍'; }
+function catLabel(id) { return CAT_MAP[id]?.label || id || ''; }
+
+// INIT
+checkSession();
+</script>
 </body>
 </html>
