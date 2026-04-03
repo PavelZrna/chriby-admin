@@ -112,8 +112,6 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
 }
 .btn-primary { background: var(--forest); color: white; }
 .btn-primary:hover { background: var(--forest-light); }
-.btn-gold { background: var(--gold); color: var(--forest); }
-.btn-gold:hover { background: var(--gold-light); }
 .btn-outline { background: white; color: var(--forest); border: 2px solid #ddd; }
 .btn-outline:hover { border-color: var(--forest); }
 .btn-danger { background: var(--danger); color: white; }
@@ -191,7 +189,8 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
 </style>
 </head>
 <body>
-  <!-- LOGIN -->
+
+<!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <span class="logo-icon">🏔️</span>
@@ -219,11 +218,13 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
     <button class="tab" data-tab="pois" onclick="switchTab('pois')">📍 Místa</button>
     <button class="tab" data-tab="guide" onclick="switchTab('guide')">👤 Průvodce</button>
     <button class="tab" data-tab="bookings" onclick="switchTab('bookings')">📋 Přihlášení</button>
+    <button class="tab" data-tab="levels" onclick="switchTab('levels')">🏆 Úrovně</button>
   </div>
   <div class="content">
+
     <!-- DASHBOARD -->
     <div class="tab-panel active" id="panel-dashboard">
-      <div class="stats-bar" id="statsBar">
+      <div class="stats-bar">
         <div class="stat-card"><div class="stat-value" id="statEvents">—</div><div class="stat-label">Nadcházející akce</div></div>
         <div class="stat-card"><div class="stat-value" id="statPois">—</div><div class="stat-label">Míst v databázi</div></div>
         <div class="stat-card"><div class="stat-value" id="statBookings">—</div><div class="stat-label">Přihlášení celkem</div></div>
@@ -234,6 +235,7 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
         <div id="upcomingList" style="margin-top:1rem;"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
+
     <!-- EVENTS -->
     <div class="tab-panel" id="panel-events">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
@@ -242,6 +244,7 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
       </div>
       <div id="eventsList"><div class="loading"><div class="spinner"></div></div></div>
     </div>
+
     <!-- POIS -->
     <div class="tab-panel" id="panel-pois">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
@@ -250,6 +253,7 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
       </div>
       <div id="poisList"><div class="loading"><div class="spinner"></div></div></div>
     </div>
+
     <!-- GUIDE -->
     <div class="tab-panel" id="panel-guide">
       <h2 style="margin-bottom:1.2rem;">Profil průvodce</h2>
@@ -268,11 +272,30 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
         <button class="btn btn-primary" onclick="saveGuide()">Uložit profil</button>
       </div>
     </div>
+
     <!-- BOOKINGS -->
     <div class="tab-panel" id="panel-bookings">
       <h2 style="margin-bottom:1.2rem;">Přihlášení na akce</h2>
       <div id="bookingsList"><div class="loading"><div class="spinner"></div></div></div>
     </div>
+
+    <!-- LEVELS -->
+    <div class="tab-panel" id="panel-levels">
+      <h2 style="margin-bottom:1.2rem;">Věrnostní úrovně</h2>
+      <div class="card">
+        <h3 style="margin-bottom:1rem;">Úrovně</h3>
+        <p class="form-hint" style="margin-bottom:1rem;">Počet km potřebných k dosažení dané úrovně. Uživatel automaticky postoupí po nasbírání dostatečného počtu km.</p>
+        <div id="levelsList"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn btn-primary" style="margin-top:1rem;" onclick="openLevelModal()">+ Nová úroveň</button>
+      </div>
+      <div class="card" style="margin-top:1.5rem;">
+        <h3 style="margin-bottom:1rem;">Km milníky</h3>
+        <p class="form-hint" style="margin-bottom:1rem;">Milníky které se zobrazují na progress baru v profilu uživatele.</p>
+        <div id="milestonesList"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn btn-primary" style="margin-top:1rem;" onclick="openMilestoneModal()">+ Nový milník</button>
+      </div>
+    </div>
+
   </div>
   <footer class="app-footer">&copy; 2026 Pavel Zrna, IČO: 67578969 — Všechna práva vyhrazena</footer>
 </div>
@@ -353,14 +376,49 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; }
   </div>
 </div>
 
+<!-- LEVEL MODAL -->
+<div class="modal-overlay" id="levelModal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="levelModalTitle">Nová úroveň</h3><button class="modal-close" onclick="closeModal('levelModal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="levelId">
+      <div class="form-group"><label>Název úrovně</label><input type="text" id="levelName" placeholder="Turista"></div>
+      <div class="form-group"><label>Potřebné km</label><input type="number" id="levelKm" min="0" placeholder="50"></div>
+      <div class="form-group"><label>Popis</label><input type="text" id="levelDesc" placeholder="Pravidelný účastník"></div>
+      <div class="form-group"><label>Emoji / ikona</label><input type="text" id="levelEmoji" placeholder="🥾"></div>
+      <div class="form-group"><label>Pořadí</label><input type="number" id="levelOrder" min="1" placeholder="2"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('levelModal')">Zrušit</button>
+      <button class="btn btn-primary" onclick="saveLevel()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- MILESTONE MODAL -->
+<div class="modal-overlay" id="milestoneModal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="milestoneModalTitle">Nový milník</h3><button class="modal-close" onclick="closeModal('milestoneModal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="milestoneId">
+      <div class="form-group"><label>Km hodnota</label><input type="number" id="milestoneKm" min="1" placeholder="100"></div>
+      <div class="form-group"><label>Popis (volitelné)</label><input type="text" id="milestoneDesc" placeholder="První stovka!"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('milestoneModal')">Zrušit</button>
+      <button class="btn btn-primary" onclick="saveMilestone()">Uložit</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://eqilmetmujdgzidvrjuh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxaWxtZXRtdWpkZ3ppZHZyanVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTA2NzEsImV4cCI6MjA5MDEyNjY3MX0._87V0SKDRCRJONbgHvIYA_FlrBVMZyx8_kCcz1N5DEk';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// AUTH
 async function handleLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
@@ -386,17 +444,14 @@ function showApp(user) {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   document.getElementById('userEmail').textContent = user.email;
-  loadDashboard(); loadEvents(); loadPois(); loadGuide(); loadBookings();
+  loadDashboard(); loadEvents(); loadPois(); loadGuide(); loadBookings(); loadLevels(); loadMilestones();
 }
 document.getElementById('loginPassword').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
 
-// TABS
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
 }
-
-// MODAL & TOAST
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function showToast(msg, isError = false) {
@@ -406,7 +461,6 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.className = 'toast', 3000);
 }
 
-// DASHBOARD
 async function loadDashboard() {
   const now = new Date().toISOString().split('T')[0];
   const [eventsRes, poisRes, bookingsRes, usersRes] = await Promise.all([
@@ -428,7 +482,6 @@ async function loadDashboard() {
     </div><span class="badge badge-upcoming">Nadcházející</span></div>`).join('');
 }
 
-// EVENTS
 let allEvents = [];
 async function loadEvents() {
   const { data, error } = await db.from('events').select('*').order('date', { ascending: false });
@@ -502,7 +555,6 @@ async function deleteEvent(id) {
   showToast('Akce smazána'); loadEvents(); loadDashboard();
 }
 
-// POIS
 let allPois = [];
 async function loadPois() {
   const { data, error } = await db.from('pois').select('*').order('name');
@@ -562,7 +614,6 @@ async function deletePoi(id) {
   showToast('Místo smazáno'); loadPois(); loadDashboard();
 }
 
-// GUIDE
 async function loadGuide() {
   const { data } = await db.from('profiles').select('*').eq('role', 'guide').single();
   if (data) {
@@ -586,7 +637,6 @@ async function saveGuide() {
   showToast('Profil uložen');
 }
 
-// BOOKINGS
 async function loadBookings() {
   const { data, error } = await db.from('bookings').select('*, events(title, date)').order('created_at', { ascending: false });
   if (error) { showToast('Chyba načítání přihlášení', true); return; }
@@ -623,7 +673,108 @@ async function viewBookings(eventId, title) {
   openModal('bookingsModal');
 }
 
-// HELPERS
+let allLevels = [];
+async function loadLevels() {
+  const { data, error } = await db.from('reward_levels').select('*').order('min_km');
+  if (error) { showToast('Chyba načítání úrovní', true); return; }
+  allLevels = data || []; renderLevels();
+}
+function renderLevels() {
+  const el = document.getElementById('levelsList');
+  if (allLevels.length === 0) { el.innerHTML = '<div class="empty-state"><p>Žádné úrovně</p></div>'; return; }
+  el.innerHTML = allLevels.map(l => `
+    <div class="participant">
+      <div><strong>${esc(l.emoji || '')} ${esc(l.name)}</strong>
+        <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">od ${l.min_km} km — ${esc(l.description || '')}</span></div>
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="editLevel('${l.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLevel('${l.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+function openLevelModal(data = null) {
+  document.getElementById('levelModalTitle').textContent = data ? 'Upravit úroveň' : 'Nová úroveň';
+  document.getElementById('levelId').value = data?.id || '';
+  document.getElementById('levelName').value = data?.name || '';
+  document.getElementById('levelKm').value = data?.min_km || '';
+  document.getElementById('levelDesc').value = data?.description || '';
+  document.getElementById('levelEmoji').value = data?.emoji || '';
+  document.getElementById('levelOrder').value = data?.sort_order || '';
+  openModal('levelModal');
+}
+function editLevel(id) { const l = allLevels.find(x => x.id === id); if (l) openLevelModal(l); }
+async function saveLevel() {
+  const id = document.getElementById('levelId').value;
+  const payload = {
+    name: document.getElementById('levelName').value.trim(),
+    min_km: parseInt(document.getElementById('levelKm').value) || 0,
+    description: document.getElementById('levelDesc').value.trim(),
+    emoji: document.getElementById('levelEmoji').value.trim(),
+    sort_order: parseInt(document.getElementById('levelOrder').value) || 1,
+  };
+  if (!payload.name) { showToast('Vyplňte název', true); return; }
+  let error;
+  if (id) { ({ error } = await db.from('reward_levels').update(payload).eq('id', id)); }
+  else { ({ error } = await db.from('reward_levels').insert(payload)); }
+  if (error) { showToast('Chyba: ' + error.message, true); return; }
+  showToast(id ? 'Úroveň upravena' : 'Úroveň vytvořena');
+  closeModal('levelModal'); loadLevels();
+}
+async function deleteLevel(id) {
+  if (!confirm('Smazat úroveň?')) return;
+  const { error } = await db.from('reward_levels').delete().eq('id', id);
+  if (error) { showToast('Chyba mazání', true); return; }
+  showToast('Úroveň smazána'); loadLevels();
+}
+
+let allMilestones = [];
+async function loadMilestones() {
+  const { data, error } = await db.from('km_milestones').select('*').order('km_value');
+  if (error) { showToast('Chyba načítání milníků', true); return; }
+  allMilestones = data || []; renderMilestones();
+}
+function renderMilestones() {
+  const el = document.getElementById('milestonesList');
+  if (allMilestones.length === 0) { el.innerHTML = '<div class="empty-state"><p>Žádné milníky</p></div>'; return; }
+  el.innerHTML = allMilestones.map(m => `
+    <div class="participant">
+      <div><strong>${m.km_value} km</strong>
+        <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">${esc(m.description || '')}</span></div>
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="editMilestone('${m.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMilestone('${m.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+function openMilestoneModal(data = null) {
+  document.getElementById('milestoneModalTitle').textContent = data ? 'Upravit milník' : 'Nový milník';
+  document.getElementById('milestoneId').value = data?.id || '';
+  document.getElementById('milestoneKm').value = data?.km_value || '';
+  document.getElementById('milestoneDesc').value = data?.description || '';
+  openModal('milestoneModal');
+}
+function editMilestone(id) { const m = allMilestones.find(x => x.id === id); if (m) openMilestoneModal(m); }
+async function saveMilestone() {
+  const id = document.getElementById('milestoneId').value;
+  const payload = {
+    km_value: parseInt(document.getElementById('milestoneKm').value) || 0,
+    description: document.getElementById('milestoneDesc').value.trim(),
+  };
+  if (!payload.km_value) { showToast('Vyplňte km hodnotu', true); return; }
+  let error;
+  if (id) { ({ error } = await db.from('km_milestones').update(payload).eq('id', id)); }
+  else { ({ error } = await db.from('km_milestones').insert(payload)); }
+  if (error) { showToast('Chyba: ' + error.message, true); return; }
+  showToast(id ? 'Milník upraven' : 'Milník vytvořen');
+  closeModal('milestoneModal'); loadMilestones();
+}
+async function deleteMilestone(id) {
+  if (!confirm('Smazat milník?')) return;
+  const { error } = await db.from('km_milestones').delete().eq('id', id);
+  if (error) { showToast('Chyba mazání', true); return; }
+  showToast('Milník smazán'); loadMilestones();
+}
+
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 function formatDate(d) { if (!d) return ''; const [y, m, day] = d.split('-'); return `${day}. ${m}. ${y}`; }
 function diffLabel(d) { return { easy: '🟢 Snadná', medium: '🟡 Střední', hard: '🔴 Těžká' }[d] || d || ''; }
@@ -637,7 +788,6 @@ const CAT_MAP = {
 function catEmoji(id) { return CAT_MAP[id]?.emoji || '📍'; }
 function catLabel(id) { return CAT_MAP[id]?.label || id || ''; }
 
-// INIT
 checkSession();
 </script>
 </body>
