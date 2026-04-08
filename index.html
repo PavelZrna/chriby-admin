@@ -116,6 +116,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="tab" data-tab="guide" onclick="switchTab('guide')">👤 Průvodce</button>
     <button class="tab" data-tab="bookings" onclick="switchTab('bookings')">📋 Přihlášení</button>
     <button class="tab" data-tab="levels" onclick="switchTab('levels')">🏆 Úrovně</button>
+    <button class="tab" data-tab="notifications" onclick="switchTab('notifications')">🔔 Notifikace</button>
   </div>
   <div class="content">
 
@@ -177,6 +178,57 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
         <p class="form-hint" style="margin-bottom:1rem;">Milníky které se zobrazují na progress baru v profilu uživatele.</p>
         <div id="milestonesList"><div class="loading"><div class="spinner"></div></div></div>
         <button class="btn btn-primary" style="margin-top:1rem;" onclick="openMilestoneModal()">+ Nový milník</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-notifications">
+      <h2 style="margin-bottom:1.2rem;">🔔 Push notifikace</h2>
+
+      <div class="stats-bar" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat-card"><div class="stat-value" id="statTokens">—</div><div class="stat-label">Aktivní zařízení</div></div>
+        <div class="stat-card"><div class="stat-value" id="statNotifSent">—</div><div class="stat-label">Odeslaných notifikací</div></div>
+        <div class="stat-card"><div class="stat-value" id="statNotifSuccess">—</div><div class="stat-label">Úspěšně doručeno</div></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:1rem;">Odeslat notifikaci</h3>
+        <div class="form-group">
+          <label>Komu odeslat</label>
+          <select id="notifTarget" onchange="toggleEventSelect()">
+            <option value="all">Všem uživatelům</option>
+            <option value="participants">Účastníkům konkrétní akce</option>
+          </select>
+        </div>
+        <div class="form-group" id="notifEventGroup" style="display:none;">
+          <label>Vyberte akci</label>
+          <select id="notifEventId"></select>
+        </div>
+        <div class="form-group">
+          <label>Nadpis notifikace</label>
+          <input type="text" id="notifTitle" placeholder="🥾 Nová akce v Chřibech!">
+        </div>
+        <div class="form-group">
+          <label>Text notifikace</label>
+          <textarea id="notifBody" rows="3" placeholder="Přijďte s námi na jarní výšlap na Brdo. Registrujte se v appce!"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Šablony (rychlé vyplnění)</label>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="useTemplate('new_event')">🆕 Nová akce</button>
+            <button class="btn btn-outline btn-sm" onclick="useTemplate('reminder')">⏰ Připomínka</button>
+            <button class="btn btn-outline btn-sm" onclick="useTemplate('cancelled')">❌ Zrušení akce</button>
+            <button class="btn btn-outline btn-sm" onclick="useTemplate('info')">ℹ️ Informace</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:center;">
+          <button class="btn btn-primary" onclick="sendNotification()" id="btnSendNotif">📤 Odeslat notifikaci</button>
+          <span id="notifStatus" style="font-size:.85rem;color:var(--stone);"></span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem;">
+        <h3 style="margin-bottom:1rem;">Historie odeslaných notifikací</h3>
+        <div id="notifLogList"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
 
@@ -331,7 +383,7 @@ function showApp(user){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   document.getElementById('userEmail').textContent=user.email;
-  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();
+  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();
 }
 document.getElementById('loginPassword').addEventListener('keyup',(e)=>{if(e.key==='Enter')handleLogin();});
 
@@ -769,6 +821,110 @@ function diffLabel(d){return{snadná:'🟢 Snadná',střední:'🟡 Střední',n
 const CAT_MAP={lookout:{emoji:'🗼',label:'Rozhledny'},castle:{emoji:'🏰',label:'Hrady'},spring:{emoji:'💧',label:'Studánky'},church:{emoji:'⛪',label:'Kostely'},memorial:{emoji:'🪨',label:'Památníky'},nature:{emoji:'🌳',label:'Příroda'},rock:{emoji:'🪨',label:'Skály'},highway:{emoji:'🛤️',label:'Dálnice'},accommodation:{emoji:'🏠',label:'Ubytování'},restaurant:{emoji:'🍽️',label:'Restaurace'}};
 function catEmoji(id){return CAT_MAP[id]?.emoji||'📍';}
 function catLabel(id){return CAT_MAP[id]?.label||id||'';}
+
+// NOTIFICATIONS
+async function loadNotifications(){
+  const[tokR,logR]=await Promise.all([
+    db.from('push_tokens').select('*',{count:'exact'}).eq('active',true),
+    db.from('notification_log').select('*').order('created_at',{ascending:false}).limit(20),
+  ]);
+  document.getElementById('statTokens').textContent=tokR.count??0;
+  const logs=logR.data||[];
+  const totalSent=logs.reduce((s,l)=>s+l.tokens_count,0);
+  const totalSuccess=logs.reduce((s,l)=>s+l.success_count,0);
+  document.getElementById('statNotifSent').textContent=totalSent;
+  document.getElementById('statNotifSuccess').textContent=totalSuccess;
+
+  // Naplň select akcí
+  const{data:events}=await db.from('events').select('id,title,date').order('date',{ascending:false}).limit(30);
+  const sel=document.getElementById('notifEventId');
+  sel.innerHTML=(events||[]).map(e=>`<option value="${e.id}">${esc(e.title)} (${formatDate(e.date)})</option>`).join('');
+
+  renderNotifLog(logs);
+}
+
+function renderNotifLog(logs){
+  const el=document.getElementById('notifLogList');
+  if(!logs||logs.length===0){el.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>Zatím žádné odeslané notifikace</p></div>';return;}
+  el.innerHTML=logs.map(l=>{
+    const dt=new Date(l.created_at);
+    const dateStr=dt.toLocaleDateString('cs-CZ')+' '+dt.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
+    const targetLabel={all:'Všem',participants:'Účastníkům akce',custom:'Vlastní'}[l.target]||l.target;
+    return`<div class="participant" style="flex-wrap:wrap;">
+      <div style="flex:1;">
+        <strong>${esc(l.title)}</strong>
+        <div style="color:var(--stone);font-size:.82rem;">${esc(l.body).substring(0,100)}${l.body.length>100?'…':''}</div>
+        <div style="color:var(--stone);font-size:.78rem;margin-top:.2rem;">📅 ${dateStr} · 🎯 ${targetLabel} · 📱 ${l.tokens_count} zařízení · ✅ ${l.success_count} doručeno</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEventSelect(){
+  const target=document.getElementById('notifTarget').value;
+  document.getElementById('notifEventGroup').style.display=target==='participants'?'block':'none';
+}
+
+const TEMPLATES={
+  new_event:{title:'🥾 Nová akce v Chřibech!',body:'Pavel Zrna přidal nový výšlap. Otevřete appku a přihlaste se!'},
+  reminder:{title:'⏰ Připomínka — zítřejší výšlap',body:'Zítra vyrážíme! Nezapomeňte na vhodné oblečení a obuv. Těšíme se na vás!'},
+  cancelled:{title:'❌ Akce zrušena',body:'Bohužel musíme zítřejší akci zrušit. Sledujte appku pro nové termíny.'},
+  info:{title:'ℹ️ Chřibský průvodce',body:''},
+};
+function useTemplate(key){
+  const t=TEMPLATES[key];
+  if(t){
+    document.getElementById('notifTitle').value=t.title;
+    document.getElementById('notifBody').value=t.body;
+  }
+}
+
+async function sendNotification(){
+  const title=document.getElementById('notifTitle').value.trim();
+  const body=document.getElementById('notifBody').value.trim();
+  const target=document.getElementById('notifTarget').value;
+  const eventId=target==='participants'?document.getElementById('notifEventId').value:null;
+
+  if(!title||!body){showToast('Vyplňte nadpis a text notifikace',true);return;}
+  if(target==='participants'&&!eventId){showToast('Vyberte akci',true);return;}
+
+  const btn=document.getElementById('btnSendNotif');
+  const status=document.getElementById('notifStatus');
+  btn.disabled=true;
+  btn.textContent='⏳ Odesílám...';
+  status.textContent='';
+
+  try{
+    const{data:{session}}=await db.auth.getSession();
+    if(!session){showToast('Nepřihlášen',true);btn.disabled=false;btn.textContent='📤 Odeslat notifikaci';return;}
+
+    const resp=await fetch(SUPABASE_URL+'/functions/v1/send-push',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+session.access_token,
+      },
+      body:JSON.stringify({title,body,target,event_id:eventId?parseInt(eventId):null}),
+    });
+
+    const result=await resp.json();
+    if(result.error){
+      showToast('Chyba: '+result.error,true);
+      status.textContent='❌ '+result.error;
+    } else {
+      showToast(`Notifikace odeslána! ${result.success_count}/${result.tokens_count} doručeno`);
+      status.textContent=`✅ Doručeno ${result.success_count} z ${result.tokens_count} zařízení`;
+      document.getElementById('notifTitle').value='';
+      document.getElementById('notifBody').value='';
+      loadNotifications();
+    }
+  }catch(err){
+    showToast('Chyba odesílání: '+err.message,true);
+    status.textContent='❌ Chyba připojení';
+  }
+  btn.disabled=false;
+  btn.textContent='📤 Odeslat notifikaci';
+}
 
 checkSession();
 </script>
