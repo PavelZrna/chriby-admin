@@ -155,7 +155,14 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
           <div class="form-group"><label>Telefon</label><input type="tel" id="guidePhone" value="+420 723 680 737"></div>
           <div class="form-group"><label>E-mail</label><input type="email" id="guideEmail" value="chribsky.pruvodce@gmail.com"></div>
         </div>
-        <div class="form-group"><label>URL fotografie</label><input type="url" id="guidePhoto" placeholder="https://..."><p class="form-hint">Odkaz na profilovou fotku průvodce</p></div>
+        <div class="form-group"><label>Fotografie průvodce</label>
+          <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
+            <input type="file" id="guidePhotoFile" accept="image/*" onchange="previewImage(this,'guidePhotoPreview')" style="font-size:.85rem;">
+            <button class="btn btn-outline btn-sm" type="button" onclick="uploadGuidePhoto()">📤 Nahrát</button>
+          </div>
+          <input type="url" id="guidePhoto" placeholder="https://... (nebo nahrajte soubor výše)">
+          <img id="guidePhotoPreview" style="max-width:100%;max-height:150px;border-radius:8px;margin-top:.5rem;display:none;">
+        </div>
         <button class="btn btn-primary" onclick="saveGuide()">Uložit profil</button>
       </div>
     </div>
@@ -285,7 +292,14 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       <div class="form-group"><label>GPS šířka (lat)</label><input type="number" step="any" id="poiLat" placeholder="49.1234"></div>
       <div class="form-group"><label>GPS délka (lng)</label><input type="number" step="any" id="poiLng" placeholder="17.3456"></div>
     </div>
-    <div class="form-group"><label>URL obrázku</label><input type="url" id="poiImage" placeholder="https://..."></div>
+    <div class="form-group"><label>Fotografie místa</label>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
+        <input type="file" id="poiImageFile" accept="image/*" onchange="previewImage(this,'poiImagePreview')" style="font-size:.85rem;">
+        <button class="btn btn-outline btn-sm" type="button" onclick="uploadPoiImage()">📤 Nahrát</button>
+      </div>
+      <input type="url" id="poiImage" placeholder="https://... (nebo nahrajte soubor výše)" style="font-size:.85rem;">
+      <img id="poiImagePreview" style="max-width:100%;max-height:150px;border-radius:8px;margin-top:.5rem;display:none;">
+    </div>
     <div class="form-group" style="display:flex;align-items:center;gap:.6rem;">
       <input type="checkbox" id="poiPartner" style="width:auto;">
       <label for="poiPartner" style="margin:0;text-transform:none;font-size:.9rem;">Partnerské místo (PARTNER badge)</label>
@@ -924,6 +938,64 @@ async function sendNotification(){
   }
   btn.disabled=false;
   btn.textContent='📤 Odeslat notifikaci';
+}
+
+// PHOTO UPLOAD via Supabase Storage
+const STORAGE_URL=SUPABASE_URL+'/storage/v1/object';
+
+function previewImage(input,previewId){
+  const preview=document.getElementById(previewId);
+  if(input.files&&input.files[0]){
+    const reader=new FileReader();
+    reader.onload=function(e){preview.src=e.target.result;preview.style.display='block';};
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function uploadToStorage(file,folder){
+  const ext=file.name.split('.').pop().toLowerCase();
+  const fileName=folder+'/'+Date.now()+'.'+ext;
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){showToast('Nepřihlášen',true);return null;}
+
+  const resp=await fetch(STORAGE_URL+'/photos/'+fileName,{
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer '+session.access_token,
+      'Content-Type':file.type,
+      'x-upsert':'true',
+    },
+    body:file,
+  });
+
+  if(!resp.ok){
+    const err=await resp.json();
+    showToast('Chyba nahrávání: '+(err.message||err.error),true);
+    return null;
+  }
+  return SUPABASE_URL+'/storage/v1/object/public/photos/'+fileName;
+}
+
+async function uploadPoiImage(){
+  const fileInput=document.getElementById('poiImageFile');
+  if(!fileInput.files||!fileInput.files[0]){showToast('Vyberte soubor',true);return;}
+  showToast('Nahrávám fotku...');
+  const url=await uploadToStorage(fileInput.files[0],'pois');
+  if(url){
+    document.getElementById('poiImage').value=url;
+    showToast('Fotka nahrána!');
+  }
+}
+
+async function uploadGuidePhoto(){
+  const fileInput=document.getElementById('guidePhotoFile');
+  if(!fileInput.files||!fileInput.files[0]){showToast('Vyberte soubor',true);return;}
+  showToast('Nahrávám fotku...');
+  const url=await uploadToStorage(fileInput.files[0],'guide');
+  if(url){
+    document.getElementById('guidePhoto').value=url;
+    showToast('Fotka nahrána!');
+  }
 }
 
 checkSession();
