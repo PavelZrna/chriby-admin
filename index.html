@@ -155,6 +155,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
           <div class="form-group"><label>Telefon</label><input type="tel" id="guidePhone" value="+420 723 680 737"></div>
           <div class="form-group"><label>E-mail</label><input type="email" id="guideEmail" value="chribsky.pruvodce@gmail.com"></div>
         </div>
+        <div class="form-group"><label>Specializace (každá na nový řádek)</label><textarea id="guideSpecialties" rows="3" placeholder="Historické výšlapy&#10;Rodinné procházky&#10;Poutní místa"></textarea><p class="form-hint">Každá specializace na samostatný řádek</p></div>
         <div class="form-group"><label>Fotografie průvodce</label>
           <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
             <input type="file" id="guidePhotoFile" accept="image/*" onchange="previewImage(this,'guidePhotoPreview')" style="font-size:.85rem;">
@@ -665,18 +666,21 @@ async function deletePoi(id){
 
 // GUIDE
 async function loadGuide(){
-  const{data}=await db.from('profiles').select('*').eq('role','guide').single();
+  const{data}=await db.from('profiles').select('*').eq('role','admin').single();
   if(data){
-    document.getElementById('guideName').value=data.full_name||'';
+    document.getElementById('guideName').value=data.full_name||data.name||'';
     document.getElementById('guideBio').value=data.bio||'';
     document.getElementById('guidePhone').value=data.phone||'';
-    document.getElementById('guideEmail').value=data.contact_email||'';
+    document.getElementById('guideEmail').value=data.contact_email||data.email||'';
     document.getElementById('guidePhoto').value=data.avatar_url||'';
+    document.getElementById('guideSpecialties').value=(data.specialties||[]).join('\n');
   }
 }
 async function saveGuide(){
-  const payload={full_name:document.getElementById('guideName').value.trim(),bio:document.getElementById('guideBio').value.trim(),phone:document.getElementById('guidePhone').value.trim(),contact_email:document.getElementById('guideEmail').value.trim(),avatar_url:document.getElementById('guidePhoto').value.trim()||null};
-  const{error}=await db.from('profiles').update(payload).eq('role','guide');
+  const specRaw=document.getElementById('guideSpecialties').value.trim();
+  const specialties=specRaw?specRaw.split('\n').map(s=>s.trim()).filter(s=>s):[];
+  const payload={full_name:document.getElementById('guideName').value.trim(),bio:document.getElementById('guideBio').value.trim(),phone:document.getElementById('guidePhone').value.trim(),contact_email:document.getElementById('guideEmail').value.trim(),avatar_url:document.getElementById('guidePhoto').value.trim()||null,specialties:specialties};
+  const{error}=await db.from('profiles').update(payload).eq('role','admin');
   if(error){showToast('Chyba: '+error.message,true);return;}
   showToast('Profil uložen');
 }
