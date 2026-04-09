@@ -286,7 +286,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <div class="form-group"><label>Název místa</label><input type="text" id="poiName" placeholder="Rozhledna Brdo"></div>
     <div class="form-group"><label>Popis</label><textarea id="poiDesc" placeholder="Popis místa..."></textarea></div>
     <div class="form-group"><label>Kategorie</label>
-      <select id="poiCategory"><option value="lookout">Rozhledny</option><option value="castle">Hrady a zříceniny</option><option value="spring">Studánky</option><option value="church">Kostely a kaple</option><option value="memorial">Památníky</option><option value="nature">Příroda</option><option value="rock">Skály</option><option value="highway">Dálnice (zříceniny)</option><option value="accommodation">Ubytování</option><option value="restaurant">Restaurace</option></select>
+      <select id="poiCategory"><option value="castle">Hrady a zříceniny</option><option value="nature">Přírodní zajímavosti</option><option value="viewpoint">Rozhledny a vyhlídky</option><option value="pilgrim">Poutní místa</option><option value="trail">Turistické trasy</option><option value="rock">Skály</option><option value="highway">Dálnice (zříceniny)</option><option value="accommodation">Ubytování</option><option value="restaurant">Restaurace</option></select>
     </div>
     <div class="form-row">
       <div class="form-group"><label>GPS šířka (lat)</label><input type="number" step="any" id="poiLat" placeholder="49.1234"></div>
@@ -629,7 +629,7 @@ function openPoiModal(d=null){
   document.getElementById('poiId').value=d?.id||'';
   document.getElementById('poiName').value=d?.name||'';
   document.getElementById('poiDesc').value=d?.description||'';
-  document.getElementById('poiCategory').value=d?.category_id||d?.category||'lookout';
+  document.getElementById('poiCategory').value=d?.category_id||d?.category||'castle';
   document.getElementById('poiLat').value=d?.latitude||'';
   document.getElementById('poiLng').value=d?.longitude||'';
   document.getElementById('poiImage').value=d?.image_url||'';
@@ -832,7 +832,7 @@ function formatDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}.
 function formatTime(t){if(!t)return'';return t.substring(0,5);}
 function timeToInput(t){if(!t)return'';return t.substring(0,5);}
 function diffLabel(d){return{snadná:'🟢 Snadná',střední:'🟡 Střední',náročná:'🔴 Náročná'}[d]||d||'';}
-const CAT_MAP={lookout:{emoji:'🗼',label:'Rozhledny'},castle:{emoji:'🏰',label:'Hrady'},spring:{emoji:'💧',label:'Studánky'},church:{emoji:'⛪',label:'Kostely'},memorial:{emoji:'🪨',label:'Památníky'},nature:{emoji:'🌳',label:'Příroda'},rock:{emoji:'🪨',label:'Skály'},highway:{emoji:'🛤️',label:'Dálnice'},accommodation:{emoji:'🏠',label:'Ubytování'},restaurant:{emoji:'🍽️',label:'Restaurace'}};
+const CAT_MAP={castle:{emoji:'🏰',label:'Hrady'},nature:{emoji:'🌲',label:'Příroda'},viewpoint:{emoji:'🏗️',label:'Rozhledny'},pilgrim:{emoji:'⛪',label:'Poutní místa'},trail:{emoji:'🥾',label:'Trasy'},rock:{emoji:'🪨',label:'Skály'},highway:{emoji:'🛤️',label:'Dálnice'},accommodation:{emoji:'🏠',label:'Ubytování'},restaurant:{emoji:'🍽️',label:'Restaurace'}};
 function catEmoji(id){return CAT_MAP[id]?.emoji||'📍';}
 function catLabel(id){return CAT_MAP[id]?.label||id||'';}
 
