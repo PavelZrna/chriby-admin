@@ -88,7 +88,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
 </style>
 </head>
 <body>
-
+ 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <span class="logo-icon">🏔️</span>
@@ -100,7 +100,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <p class="login-error" id="loginError"></p>
   </div>
 </div>
-
+ 
 <div class="app" id="app">
   <div class="topbar">
     <h1>🏔️ Chřibský průvodce — Admin</h1>
@@ -116,10 +116,11 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="tab" data-tab="guide" onclick="switchTab('guide')">👤 Průvodce</button>
     <button class="tab" data-tab="bookings" onclick="switchTab('bookings')">📋 Přihlášení</button>
     <button class="tab" data-tab="levels" onclick="switchTab('levels')">🏆 Úrovně</button>
+    <button class="tab" data-tab="users" onclick="switchTab('users')">👥 Uživatelé</button>
     <button class="tab" data-tab="notifications" onclick="switchTab('notifications')">🔔 Notifikace</button>
   </div>
   <div class="content">
-
+ 
     <div class="tab-panel active" id="panel-dashboard">
       <div class="stats-bar">
         <div class="stat-card"><div class="stat-value" id="statEvents">—</div><div class="stat-label">Nadcházející akce</div></div>
@@ -129,7 +130,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       </div>
       <div class="card"><h3>Nejbližší akce</h3><div id="upcomingList" style="margin-top:1rem;"><div class="loading"><div class="spinner"></div></div></div></div>
     </div>
-
+ 
     <div class="tab-panel" id="panel-events">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
         <h2>Správa akcí</h2>
@@ -137,7 +138,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       </div>
       <div id="eventsList"><div class="loading"><div class="spinner"></div></div></div>
     </div>
-
+ 
     <div class="tab-panel" id="panel-pois">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
         <h2>Správa míst</h2>
@@ -145,11 +146,11 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       </div>
       <div id="poisList"><div class="loading"><div class="spinner"></div></div></div>
     </div>
-
+ 
     <div class="tab-panel" id="panel-guide">
       <h2 style="margin-bottom:1.2rem;">Profil průvodce</h2>
       <div class="card">
-        <div class="form-group"><label>Jméno</label><input type="text" id="guideName" value="Pavel Zrna"></div>
+        <div class="form-group"><label>Celé jméno</label><input type="text" id="guideName" value="Pavel Zrna"></div>
         <div class="form-group"><label>Bio / O průvodci</label><textarea id="guideBio" rows="5"></textarea></div>
         <div class="form-row">
           <div class="form-group"><label>Telefon</label><input type="tel" id="guidePhone" value="+420 723 680 737"></div>
@@ -167,12 +168,12 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
         <button class="btn btn-primary" onclick="saveGuide()">Uložit profil</button>
       </div>
     </div>
-
+ 
     <div class="tab-panel" id="panel-bookings">
       <h2 style="margin-bottom:1.2rem;">Přihlášení na akce</h2>
       <div id="bookingsList"><div class="loading"><div class="spinner"></div></div></div>
     </div>
-
+ 
     <div class="tab-panel" id="panel-levels">
       <h2 style="margin-bottom:1.2rem;">Věrnostní úrovně</h2>
       <div class="card">
@@ -188,16 +189,29 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
         <button class="btn btn-primary" style="margin-top:1rem;" onclick="openMilestoneModal()">+ Nový milník</button>
       </div>
     </div>
-
+ 
+    <div class="tab-panel" id="panel-users">
+      <h2 style="margin-bottom:1.2rem;">👥 Uživatelé</h2>
+      <div class="stats-bar" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat-card"><div class="stat-value" id="statTotalUsers">—</div><div class="stat-label">Registrovaní</div></div>
+        <div class="stat-card"><div class="stat-value" id="statActiveUsers">—</div><div class="stat-label">S notifikacemi</div></div>
+        <div class="stat-card"><div class="stat-value" id="statTotalKm">—</div><div class="stat-label">Celkem km</div></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem;">Přehled uživatelů a jejich úrovní</h3>
+        <div id="usersTable"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+ 
     <div class="tab-panel" id="panel-notifications">
       <h2 style="margin-bottom:1.2rem;">🔔 Push notifikace</h2>
-
+ 
       <div class="stats-bar" style="grid-template-columns:repeat(3,1fr);">
         <div class="stat-card"><div class="stat-value" id="statTokens">—</div><div class="stat-label">Aktivní zařízení</div></div>
         <div class="stat-card"><div class="stat-value" id="statNotifSent">—</div><div class="stat-label">Odeslaných notifikací</div></div>
         <div class="stat-card"><div class="stat-value" id="statNotifSuccess">—</div><div class="stat-label">Úspěšně doručeno</div></div>
       </div>
-
+ 
       <div class="card">
         <h3 style="margin-bottom:1rem;">Odeslat notifikaci</h3>
         <div class="form-group">
@@ -233,17 +247,17 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
           <span id="notifStatus" style="font-size:.85rem;color:var(--stone);"></span>
         </div>
       </div>
-
+ 
       <div class="card" style="margin-top:1.5rem;">
         <h3 style="margin-bottom:1rem;">Historie odeslaných notifikací</h3>
         <div id="notifLogList"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
-
+ 
   </div>
-  <footer class="app-footer">&copy; 2026 Pavel Zrna, IČO: 67578969 — Všechna práva vyhrazena</footer>
+  <footer class="app-footer">&copy; 2026 Chřibský průvodce — Všechna práva vyhrazena</footer>
 </div>
-
+ 
 <!-- EVENT MODAL -->
 <div class="modal-overlay" id="eventModal"><div class="modal">
   <div class="modal-header"><h3 id="eventModalTitle">Nová akce</h3><button class="modal-close" onclick="closeModal('eventModal')">&times;</button></div>
@@ -278,7 +292,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="btn btn-primary" onclick="saveEvent()">Uložit akci</button>
   </div>
 </div></div>
-
+ 
 <!-- POI MODAL -->
 <div class="modal-overlay" id="poiModal"><div class="modal">
   <div class="modal-header"><h3 id="poiModalTitle">Nové místo</h3><button class="modal-close" onclick="closeModal('poiModal')">&times;</button></div>
@@ -311,7 +325,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="btn btn-primary" onclick="savePoi()">Uložit místo</button>
   </div>
 </div></div>
-
+ 
 <!-- CONFIRM PARTICIPATION MODAL -->
 <div class="modal-overlay" id="confirmModal"><div class="modal" style="width:650px;">
   <div class="modal-header"><h3 id="confirmModalTitle">Potvrdit účast</h3><button class="modal-close" onclick="closeModal('confirmModal')">&times;</button></div>
@@ -321,13 +335,13 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="btn btn-success" onclick="saveParticipations()">💾 Uložit potvrzení</button>
   </div>
 </div></div>
-
+ 
 <!-- BOOKINGS DETAIL MODAL -->
 <div class="modal-overlay" id="bookingsModal"><div class="modal">
   <div class="modal-header"><h3 id="bookingsModalTitle">Přihlášení</h3><button class="modal-close" onclick="closeModal('bookingsModal')">&times;</button></div>
   <div class="modal-body" id="bookingsModalBody"></div>
 </div></div>
-
+ 
 <!-- LEVEL MODAL -->
 <div class="modal-overlay" id="levelModal"><div class="modal">
   <div class="modal-header"><h3 id="levelModalTitle">Nová úroveň</h3><button class="modal-close" onclick="closeModal('levelModal')">&times;</button></div>
@@ -347,7 +361,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="btn btn-primary" onclick="saveLevel()">Uložit</button>
   </div>
 </div></div>
-
+ 
 <!-- MILESTONE MODAL -->
 <div class="modal-overlay" id="milestoneModal"><div class="modal">
   <div class="modal-header"><h3 id="milestoneModalTitle">Nový milník</h3><button class="modal-close" onclick="closeModal('milestoneModal')">&times;</button></div>
@@ -362,16 +376,16 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="btn btn-primary" onclick="saveMilestone()">Uložit</button>
   </div>
 </div></div>
-
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://eqilmetmujdgzidvrjuh.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxaWxtZXRtdWpkZ3ppZHZyanVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTA2NzEsImV4cCI6MjA5MDEyNjY3MX0._87V0SKDRCRJONbgHvIYA_FlrBVMZyx8_kCcz1N5DEk';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let currentUser=null;
-
+ 
 async function handleLogin(){
   const email=document.getElementById('loginEmail').value.trim();
   const password=document.getElementById('loginPassword').value;
@@ -398,10 +412,10 @@ function showApp(user){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   document.getElementById('userEmail').textContent=user.email;
-  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();
+  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();loadUsers();
 }
 document.getElementById('loginPassword').addEventListener('keyup',(e)=>{if(e.key==='Enter')handleLogin();});
-
+ 
 function switchTab(n){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===n));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+n));
@@ -413,7 +427,7 @@ function showToast(msg,isError=false){
   t.className='toast show'+(isError?' error':'');
   setTimeout(()=>t.className='toast',3000);
 }
-
+ 
 // DASHBOARD
 async function loadDashboard(){
   const now=new Date().toISOString().split('T')[0];
@@ -435,7 +449,7 @@ async function loadDashboard(){
     <div style="color:var(--stone);font-size:.82rem;">${formatDate(e.date)} ${formatTime(e.time)}${e.time_end?' — '+formatTime(e.time_end):''} · ${esc(e.distance||'')}</div>
     </div><span class="badge badge-upcoming">Nadcházející</span></div>`).join('');
 }
-
+ 
 // EVENTS
 let allEvents=[];
 async function loadEvents(){
@@ -520,31 +534,31 @@ async function markPast(id){
   if(error){showToast('Chyba',true);return;}
   showToast('Akce označena jako proběhlá');loadEvents();loadDashboard();
 }
-
+ 
 // CONFIRM PARTICIPATION
 let confirmEventId=null;
 let confirmBookings=[];
 let confirmedSet=new Set();
-
+ 
 async function openConfirmModal(eventId,title){
   confirmEventId=eventId;
   document.getElementById('confirmModalTitle').textContent='Potvrdit účast — '+title;
   const body=document.getElementById('confirmModalBody');
   body.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   openModal('confirmModal');
-
+ 
   const[bookRes,partRes]=await Promise.all([
     db.from('bookings').select('*').eq('event_id',eventId).order('created_at'),
     db.from('participations').select('*').eq('event_id',eventId),
   ]);
   confirmBookings=bookRes.data||[];
   confirmedSet=new Set((partRes.data||[]).map(p=>p.participant_name));
-
+ 
   if(confirmBookings.length===0){
     body.innerHTML='<div class="empty-state"><p>Nikdo se na tuto akci nepřihlásil</p></div>';
     return;
   }
-
+ 
   const totalPersons=confirmBookings.reduce((s,b)=>s+(b.participant_count||1),0);
   const confirmedCount=[...confirmedSet].length;
   body.innerHTML=`
@@ -564,17 +578,17 @@ async function openConfirmModal(eventId,title){
       </div>`;
     }).join('')}`;
 }
-
+ 
 function toggleConfirmStyle(cb){
   const row=cb.closest('.confirm-row');
   row.classList.toggle('confirmed',cb.checked);
 }
-
+ 
 async function saveParticipations(){
   const checkboxes=document.querySelectorAll('#confirmModalBody input[type="checkbox"]');
   const toConfirm=[];
   const toRemove=[];
-
+ 
   checkboxes.forEach(cb=>{
     const name=cb.dataset.name;
     const count=parseInt(cb.dataset.count)||1;
@@ -586,7 +600,7 @@ async function saveParticipations(){
       toRemove.push(name);
     }
   });
-
+ 
   let hasError=false;
   if(toConfirm.length>0){
     const{error}=await db.from('participations').insert(toConfirm);
@@ -603,7 +617,7 @@ async function saveParticipations(){
     closeModal('confirmModal');
   }
 }
-
+ 
 // POIS
 let allPois=[];
 async function loadPois(){
@@ -663,7 +677,7 @@ async function deletePoi(id){
   if(error){showToast('Chyba mazání',true);return;}
   showToast('Místo smazáno');loadPois();loadDashboard();
 }
-
+ 
 // GUIDE
 async function loadGuide(){
   const{data}=await db.from('profiles').select('*').eq('role','admin').single();
@@ -684,7 +698,7 @@ async function saveGuide(){
   if(error){showToast('Chyba: '+error.message,true);return;}
   showToast('Profil uložen');
 }
-
+ 
 // BOOKINGS
 async function loadBookings(){
   const{data,error}=await db.from('bookings').select('*, events(title, date)').order('created_at',{ascending:false});
@@ -717,7 +731,7 @@ async function viewBookings(eventId,title){
   }
   openModal('bookingsModal');
 }
-
+ 
 // LEVELS
 let allLevels=[];
 async function loadLevels(){
@@ -777,7 +791,7 @@ async function deleteLevel(id){
   if(error){showToast('Chyba mazání',true);return;}
   showToast('Úroveň smazána');loadLevels();
 }
-
+ 
 // MILESTONES
 let allMilestones=[];
 async function loadMilestones(){
@@ -829,7 +843,7 @@ async function deleteMilestone(id){
   if(error){showToast('Chyba mazání',true);return;}
   showToast('Milník smazán');loadMilestones();
 }
-
+ 
 // HELPERS
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 function formatDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}. ${m}. ${y}`;}
@@ -839,7 +853,7 @@ function diffLabel(d){return{snadná:'🟢 Snadná',střední:'🟡 Střední',n
 const CAT_MAP={castle:{emoji:'🏰',label:'Hrady'},nature:{emoji:'🌲',label:'Příroda'},viewpoint:{emoji:'🏗️',label:'Rozhledny'},pilgrim:{emoji:'⛪',label:'Poutní místa'},trail:{emoji:'🥾',label:'Trasy'},rock:{emoji:'🪨',label:'Skály'},highway:{emoji:'🛤️',label:'Dálnice'},accommodation:{emoji:'🏠',label:'Ubytování'},restaurant:{emoji:'🍽️',label:'Restaurace'}};
 function catEmoji(id){return CAT_MAP[id]?.emoji||'📍';}
 function catLabel(id){return CAT_MAP[id]?.label||id||'';}
-
+ 
 // NOTIFICATIONS
 async function loadNotifications(){
   const[tokR,logR]=await Promise.all([
@@ -852,15 +866,15 @@ async function loadNotifications(){
   const totalSuccess=logs.reduce((s,l)=>s+l.success_count,0);
   document.getElementById('statNotifSent').textContent=totalSent;
   document.getElementById('statNotifSuccess').textContent=totalSuccess;
-
+ 
   // Naplň select akcí
   const{data:events}=await db.from('events').select('id,title,date').order('date',{ascending:false}).limit(30);
   const sel=document.getElementById('notifEventId');
   sel.innerHTML=(events||[]).map(e=>`<option value="${e.id}">${esc(e.title)} (${formatDate(e.date)})</option>`).join('');
-
+ 
   renderNotifLog(logs);
 }
-
+ 
 function renderNotifLog(logs){
   const el=document.getElementById('notifLogList');
   if(!logs||logs.length===0){el.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>Zatím žádné odeslané notifikace</p></div>';return;}
@@ -877,14 +891,14 @@ function renderNotifLog(logs){
     </div>`;
   }).join('');
 }
-
+ 
 function toggleEventSelect(){
   const target=document.getElementById('notifTarget').value;
   document.getElementById('notifEventGroup').style.display=target==='participants'?'block':'none';
 }
-
+ 
 const TEMPLATES={
-  new_event:{title:'🥾 Nová akce v Chřibech!',body:'Pavel Zrna přidal nový výšlap. Otevřete appku a přihlaste se!'},
+  new_event:{title:'🥾 Nová akce v Chřibech!',body:'Přidali jsme nový výšlap. Otevřete appku a přihlaste se!'},
   reminder:{title:'⏰ Připomínka — zítřejší výšlap',body:'Zítra vyrážíme! Nezapomeňte na vhodné oblečení a obuv. Těšíme se na vás!'},
   cancelled:{title:'❌ Akce zrušena',body:'Bohužel musíme zítřejší akci zrušit. Sledujte appku pro nové termíny.'},
   info:{title:'ℹ️ Chřibský průvodce',body:''},
@@ -896,26 +910,26 @@ function useTemplate(key){
     document.getElementById('notifBody').value=t.body;
   }
 }
-
+ 
 async function sendNotification(){
   const title=document.getElementById('notifTitle').value.trim();
   const body=document.getElementById('notifBody').value.trim();
   const target=document.getElementById('notifTarget').value;
   const eventId=target==='participants'?document.getElementById('notifEventId').value:null;
-
+ 
   if(!title||!body){showToast('Vyplňte nadpis a text notifikace',true);return;}
   if(target==='participants'&&!eventId){showToast('Vyberte akci',true);return;}
-
+ 
   const btn=document.getElementById('btnSendNotif');
   const status=document.getElementById('notifStatus');
   btn.disabled=true;
   btn.textContent='⏳ Odesílám...';
   status.textContent='';
-
+ 
   try{
     const{data:{session}}=await db.auth.getSession();
     if(!session){showToast('Nepřihlášen',true);btn.disabled=false;btn.textContent='📤 Odeslat notifikaci';return;}
-
+ 
     const resp=await fetch(SUPABASE_URL+'/functions/v1/send-push',{
       method:'POST',
       headers:{
@@ -924,7 +938,7 @@ async function sendNotification(){
       },
       body:JSON.stringify({title,body,target,event_id:eventId?parseInt(eventId):null}),
     });
-
+ 
     const result=await resp.json();
     if(result.error){
       showToast('Chyba: '+result.error,true);
@@ -943,10 +957,10 @@ async function sendNotification(){
   btn.disabled=false;
   btn.textContent='📤 Odeslat notifikaci';
 }
-
+ 
 // PHOTO UPLOAD via Supabase Storage
 const STORAGE_URL=SUPABASE_URL+'/storage/v1/object';
-
+ 
 function previewImage(input,previewId){
   const preview=document.getElementById(previewId);
   if(input.files&&input.files[0]){
@@ -955,13 +969,13 @@ function previewImage(input,previewId){
     reader.readAsDataURL(input.files[0]);
   }
 }
-
+ 
 async function uploadToStorage(file,folder){
   const ext=file.name.split('.').pop().toLowerCase();
   const fileName=folder+'/'+Date.now()+'.'+ext;
   const{data:{session}}=await db.auth.getSession();
   if(!session){showToast('Nepřihlášen',true);return null;}
-
+ 
   const resp=await fetch(STORAGE_URL+'/photos/'+fileName,{
     method:'POST',
     headers:{
@@ -971,7 +985,7 @@ async function uploadToStorage(file,folder){
     },
     body:file,
   });
-
+ 
   if(!resp.ok){
     const err=await resp.json();
     showToast('Chyba nahrávání: '+(err.message||err.error),true);
@@ -979,7 +993,7 @@ async function uploadToStorage(file,folder){
   }
   return SUPABASE_URL+'/storage/v1/object/public/photos/'+fileName;
 }
-
+ 
 async function uploadPoiImage(){
   const fileInput=document.getElementById('poiImageFile');
   if(!fileInput.files||!fileInput.files[0]){showToast('Vyberte soubor',true);return;}
@@ -990,7 +1004,7 @@ async function uploadPoiImage(){
     showToast('Fotka nahrána!');
   }
 }
-
+ 
 async function uploadGuidePhoto(){
   const fileInput=document.getElementById('guidePhotoFile');
   if(!fileInput.files||!fileInput.files[0]){showToast('Vyberte soubor',true);return;}
@@ -1001,8 +1015,39 @@ async function uploadGuidePhoto(){
     showToast('Fotka nahrána!');
   }
 }
-
+ 
+// USERS
+async function loadUsers(){
+  const{data:users}=await db.from('profiles').select('*').order('created_at',{ascending:false});
+  const{count:tokenCount}=await db.from('push_tokens').select('*',{count:'exact'}).eq('active',true);
+  if(!users)return;
+  document.getElementById('statTotalUsers').textContent=users.length;
+  document.getElementById('statActiveUsers').textContent=tokenCount||0;
+  const totalKm=users.reduce((s,u)=>s+(u.total_km||0),0);
+  document.getElementById('statTotalKm').textContent=totalKm+' km';
+ 
+  const el=document.getElementById('usersTable');
+  if(users.length===0){el.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>Zatím žádní uživatelé</p></div>';return;}
+ 
+  const levelColors={Nováček:'#9CA3AF',Turista:'#2D6A4F',Znalec:'#CBA41E',Průvodce:'#8B4513',Veterán:'#7B2D8B'};
+ 
+  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.85rem;"><thead><tr style="border-bottom:2px solid #e5e5e5;text-align:left;"><th style="padding:.5rem;">Jméno</th><th style="padding:.5rem;">E-mail</th><th style="padding:.5rem;">Úroveň</th><th style="padding:.5rem;">Km</th><th style="padding:.5rem;">Výšlapů</th><th style="padding:.5rem;">Registrace</th></tr></thead><tbody>'+
+    users.filter(u=>u.role==='visitor').map(u=>{
+      const lvlColor=levelColors[u.reward_level]||'#9CA3AF';
+      const regDate=new Date(u.created_at).toLocaleDateString('cs-CZ');
+      return`<tr style="border-bottom:1px solid #f0f0f0;">
+        <td style="padding:.5rem;font-weight:600;">${esc(u.name||u.full_name||'—')}</td>
+        <td style="padding:.5rem;color:var(--stone);">${esc(u.email||'—')}</td>
+        <td style="padding:.5rem;"><span style="background:${lvlColor}15;color:${lvlColor};padding:2px 8px;border-radius:4px;font-weight:600;font-size:.8rem;">${esc(u.reward_level||'Nováček')}</span></td>
+        <td style="padding:.5rem;font-weight:600;">${u.total_km||0}</td>
+        <td style="padding:.5rem;">${u.completed_hikes||0}</td>
+        <td style="padding:.5rem;color:var(--stone);">${regDate}</td>
+      </tr>`;
+    }).join('')+'</tbody></table>';
+}
+ 
 checkSession();
 </script>
 </body>
 </html>
+ 
