@@ -299,7 +299,9 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
   <div class="modal-body">
     <input type="hidden" id="poiId">
     <div class="form-group"><label>Název místa</label><input type="text" id="poiName" placeholder="Rozhledna Brdo"></div>
-    <div class="form-group"><label>Popis</label><textarea id="poiDesc" placeholder="Popis místa..."></textarea></div>
+    <div class="form-group"><label>Popis (krátký úvod)</label><textarea id="poiDesc" placeholder="Krátký popis místa..."></textarea></div>
+    <div class="form-group"><label>Historie</label><textarea id="poiHistory" rows="4" placeholder="Historie místa — kdy vzniklo, co se tu dělo..."></textarea></div>
+    <div class="form-group"><label>Zajímavosti (každá na nový řádek)</label><textarea id="poiHighlights" rows="3" placeholder="Gotická věž&#10;Lesní údolí&#10;Slavnosti na hradě"></textarea><p class="form-hint">Každá zajímavost na samostatný řádek</p></div>
     <div class="form-group"><label>Kategorie</label>
       <select id="poiCategory"><option value="castle">Hrady a zříceniny</option><option value="nature">Přírodní zajímavosti</option><option value="viewpoint">Rozhledny a vyhlídky</option><option value="pilgrim">Poutní místa</option><option value="trail">Turistické trasy</option><option value="rock">Skály</option><option value="highway">Dálnice (zříceniny)</option><option value="accommodation">Ubytování</option><option value="restaurant">Restaurace</option></select>
     </div>
@@ -307,6 +309,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       <div class="form-group"><label>GPS šířka (lat)</label><input type="number" step="any" id="poiLat" placeholder="49.1234"></div>
       <div class="form-group"><label>GPS délka (lng)</label><input type="number" step="any" id="poiLng" placeholder="17.3456"></div>
     </div>
+    <div class="form-group"><label>Nadmořská výška (m)</label><input type="number" id="poiAltitude" placeholder="475"></div>
     <div class="form-group"><label>Fotografie místa</label>
       <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
         <input type="file" id="poiImageFile" accept="image/*" onchange="previewImage(this,'poiImagePreview')" style="font-size:.85rem;">
@@ -644,6 +647,9 @@ function openPoiModal(d=null){
   document.getElementById('poiId').value=d?.id||'';
   document.getElementById('poiName').value=d?.name||'';
   document.getElementById('poiDesc').value=d?.description||'';
+  document.getElementById('poiHistory').value=d?.history||'';
+  document.getElementById('poiHighlights').value=(d?.highlights||[]).join('\n');
+  document.getElementById('poiAltitude').value=d?.altitude||'';
   document.getElementById('poiCategory').value=d?.category_id||d?.category||'castle';
   document.getElementById('poiLat').value=d?.latitude||'';
   document.getElementById('poiLng').value=d?.longitude||'';
@@ -654,9 +660,14 @@ function openPoiModal(d=null){
 function editPoi(id){const p=allPois.find(x=>x.id==id);if(p)openPoiModal(p);}
 async function savePoi(){
   const id=document.getElementById('poiId').value;
+  const highlightsRaw=document.getElementById('poiHighlights').value.trim();
+  const highlights=highlightsRaw?highlightsRaw.split('\n').map(h=>h.trim()).filter(h=>h):[];
   const payload={
     name:document.getElementById('poiName').value.trim(),
     description:document.getElementById('poiDesc').value.trim(),
+    history:document.getElementById('poiHistory').value.trim()||null,
+    highlights:highlights.length>0?highlights:null,
+    altitude:parseInt(document.getElementById('poiAltitude').value)||null,
     category_id:document.getElementById('poiCategory').value,
     latitude:parseFloat(document.getElementById('poiLat').value)||null,
     longitude:parseFloat(document.getElementById('poiLng').value)||null,
