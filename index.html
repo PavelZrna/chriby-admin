@@ -867,7 +867,7 @@ async function deleteLevel(id){
 // MILESTONES
 let allMilestones=[];
 async function loadMilestones(){
-  const{data,error}=await db.from('km_milestones').select('*').order('sort_order');
+  const{data,error}=await db.from('km_milestones').select('*').order('km');
   if(error){showToast('Chyba načítání milníků',true);return;}
   allMilestones=data||[];renderMilestones();
 }
