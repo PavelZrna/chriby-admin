@@ -124,9 +124,15 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <div class="tab-panel active" id="panel-dashboard">
       <div class="stats-bar">
         <div class="stat-card"><div class="stat-value" id="statEvents">—</div><div class="stat-label">Nadcházející akce</div></div>
+        <div class="stat-card"><div class="stat-value" id="statPastEvents">—</div><div class="stat-label">Proběhlých akcí</div></div>
         <div class="stat-card"><div class="stat-value" id="statPois">—</div><div class="stat-label">Míst v databázi</div></div>
-        <div class="stat-card"><div class="stat-value" id="statBookings">—</div><div class="stat-label">Přihlášení celkem</div></div>
         <div class="stat-card"><div class="stat-value" id="statUsers">—</div><div class="stat-label">Registrovaných</div></div>
+      </div>
+      <div class="stats-bar" style="margin-top:.8rem;">
+        <div class="stat-card"><div class="stat-value" id="statTotalParticipants">—</div><div class="stat-label">Lidí na výšlapech</div></div>
+        <div class="stat-card"><div class="stat-value" id="statAllKm">—</div><div class="stat-label">Celkem km ušlých</div></div>
+        <div class="stat-card"><div class="stat-value" id="statTotalHours">—</div><div class="stat-label">Hodin na výšlapech</div></div>
+        <div class="stat-card"><div class="stat-value" id="statBookings">—</div><div class="stat-label">Přihlášení celkem</div></div>
       </div>
       <div class="card"><h3>Nejbližší akce</h3><div id="upcomingList" style="margin-top:1rem;"><div class="loading"><div class="spinner"></div></div></div></div>
     </div>
@@ -433,17 +439,38 @@ function showToast(msg,isError=false){
 
 // DASHBOARD
 async function loadDashboard(){
-  const now=new Date().toISOString().split('T')[0];
-  const[evR,poR,boR,usR]=await Promise.all([
+  const[evR,pastR,poR,boR,usR,partR]=await Promise.all([
     db.from('events').select('*',{count:'exact'}).eq('is_past',false),
+    db.from('events').select('*').eq('is_past',true),
     db.from('pois').select('*',{count:'exact'}),
     db.from('bookings').select('*',{count:'exact'}),
-    db.from('profiles').select('*',{count:'exact'}),
+    db.from('profiles').select('*',{count:'exact'}).eq('role','visitor'),
+    db.from('participations').select('*,events(distance,duration)'),
   ]);
   document.getElementById('statEvents').textContent=evR.count??0;
+  document.getElementById('statPastEvents').textContent=pastR.data?.length??0;
   document.getElementById('statPois').textContent=poR.count??0;
   document.getElementById('statBookings').textContent=boR.count??0;
   document.getElementById('statUsers').textContent=usR.count??0;
+
+  // Calculate totals from participations
+  const parts=partR.data||[];
+  document.getElementById('statTotalParticipants').textContent=parts.length;
+  let totalKm=0;let totalHours=0;
+  parts.forEach(p=>{
+    const dist=p.events?.distance;if(dist)totalKm+=parseFloat(dist)||0;
+    const dur=p.events?.duration;if(dur){const h=parseFloat(dur)||0;totalHours+=h;}
+  });
+  // Also calculate from past events if no participations yet
+  if(parts.length===0&&pastR.data){
+    pastR.data.forEach(e=>{
+      const dist=e.distance;if(dist)totalKm+=parseFloat(dist)||0;
+      const dur=e.duration;if(dur)totalHours+=parseFloat(dur)||0;
+    });
+  }
+  document.getElementById('statAllKm').textContent=totalKm.toFixed(0)+' km';
+  document.getElementById('statTotalHours').textContent=totalHours.toFixed(0)+' hod';
+
   const{data:upcoming}=await db.from('events').select('*').eq('is_past',false).order('date').limit(5);
   const el=document.getElementById('upcomingList');
   if(!upcoming||upcoming.length===0){el.innerHTML='<div class="empty-state"><div class="icon">📅</div><p>Žádné nadcházející akce</p></div>';return;}
@@ -631,16 +658,29 @@ async function loadPois(){
 function renderPois(){
   const el=document.getElementById('poisList');
   if(allPois.length===0){el.innerHTML='<div class="empty-state"><div class="icon">📍</div><p>Zatím žádná místa</p></div>';return;}
-  el.innerHTML=allPois.map(p=>`
-    <div class="card"><div class="card-header"><div>
-      <h4 class="card-title">${catEmoji(p.category_id||p.category)} ${esc(p.name)}</h4>
-      <div class="card-meta">${catLabel(p.category_id||p.category)} · ${p.latitude?.toFixed(4)||'?'}, ${p.longitude?.toFixed(4)||'?'}</div>
-    </div><div class="card-actions">${p.is_partner?'<span class="badge badge-partner">PARTNER</span>':''}</div></div>
-    <p style="font-size:.9rem;color:var(--stone);margin-bottom:.8rem;">${esc(p.description||'').substring(0,120)}${(p.description||'').length>120?'…':''}</p>
-    <div class="card-actions">
-      <button class="btn btn-outline btn-sm" onclick="editPoi('${p.id}')">✏️ Upravit</button>
-      <button class="btn btn-danger btn-sm" onclick="deletePoi('${p.id}')">🗑️ Smazat</button>
-    </div></div>`).join('');
+  // Group by category
+  const groups={};
+  allPois.forEach(p=>{
+    const cat=p.category_id||p.category||'other';
+    if(!groups[cat])groups[cat]=[];
+    groups[cat].push(p);
+  });
+  let html='';
+  Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([cat,pois])=>{
+    html+=`<h3 style="margin:1.2rem 0 .6rem;color:var(--forest);">${catEmoji(cat)} ${catLabel(cat)} (${pois.length})</h3>`;
+    pois.forEach(p=>{
+      html+=`<div class="card"><div class="card-header"><div>
+        <h4 class="card-title">${catEmoji(p.category_id||p.category)} ${esc(p.name)}${p.altitude?' · '+p.altitude+' m':''}</h4>
+        <div class="card-meta">${p.latitude?.toFixed(4)||'?'}, ${p.longitude?.toFixed(4)||'?'}${p.image_url?' · 📷 Foto':''}${p.history?' · 📜 Historie':''}</div>
+      </div><div class="card-actions">${p.is_partner?'<span class="badge badge-partner">PARTNER</span>':''}</div></div>
+      <p style="font-size:.9rem;color:var(--stone);margin-bottom:.8rem;">${esc(p.description||'').substring(0,120)}${(p.description||'').length>120?'…':''}</p>
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="editPoi('${p.id}')">✏️ Upravit</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePoi('${p.id}')">🗑️ Smazat</button>
+      </div></div>`;
+    });
+  });
+  el.innerHTML=html;
 }
 function openPoiModal(d=null){
   document.getElementById('poiModalTitle').textContent=d?'Upravit místo':'Nové místo';
