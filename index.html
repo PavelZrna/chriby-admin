@@ -117,6 +117,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="tab" data-tab="bookings" onclick="switchTab('bookings')">📋 Přihlášení</button>
     <button class="tab" data-tab="levels" onclick="switchTab('levels')">🏆 Úrovně</button>
     <button class="tab" data-tab="users" onclick="switchTab('users')">👥 Uživatelé</button>
+    <button class="tab" data-tab="ratings" onclick="switchTab('ratings')">⭐ Hodnocení</button>
     <button class="tab" data-tab="notifications" onclick="switchTab('notifications')">🔔 Notifikace</button>
   </div>
   <div class="content">
@@ -206,6 +207,23 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       <div class="card">
         <h3 style="margin-bottom:1rem;">Přehled uživatelů a jejich úrovní</h3>
         <div id="usersTable"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-ratings">
+      <h2 style="margin-bottom:1.2rem;">⭐ Hodnocení výšlapů</h2>
+      <div class="stats-bar" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat-card"><div class="stat-value" id="statAvgRating">—</div><div class="stat-label">Průměrné hodnocení</div></div>
+        <div class="stat-card"><div class="stat-value" id="statTotalRatings">—</div><div class="stat-label">Celkem hodnocení</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat5Stars">—</div><div class="stat-label">5 hvězd</div></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem;">Hodnocení podle akcí</h3>
+        <div id="ratingsListByEvent"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+      <div class="card" style="margin-top:1rem;">
+        <h3 style="margin-bottom:1rem;">Všechna hodnocení</h3>
+        <div id="ratingsListAll"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
 
@@ -422,7 +440,7 @@ function showApp(user){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   document.getElementById('userEmail').textContent=user.email;
-  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();loadUsers();
+  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();loadUsers();loadRatings();
 }
 document.getElementById('loginPassword').addEventListener('keyup',(e)=>{if(e.key==='Enter')handleLogin();});
 
@@ -1098,6 +1116,59 @@ async function loadUsers(){
         <td style="padding:.5rem;color:var(--stone);">${regDate}</td>
       </tr>`;
     }).join('')+'</tbody></table>';
+}
+
+// RATINGS
+async function loadRatings(){
+  const{data:ratings}=await db.from('ratings').select('*, events(title, date)').order('created_at',{ascending:false});
+  const all=ratings||[];
+  
+  // Stats
+  document.getElementById('statTotalRatings').textContent=all.length;
+  if(all.length>0){
+    const avg=(all.reduce((s,r)=>s+r.stars,0)/all.length).toFixed(1);
+    document.getElementById('statAvgRating').textContent='⭐ '+avg;
+  } else {
+    document.getElementById('statAvgRating').textContent='—';
+  }
+  document.getElementById('stat5Stars').textContent=all.filter(r=>r.stars===5).length;
+
+  // Group by event
+  const byEvent={};
+  all.forEach(r=>{
+    const eid=r.event_id;
+    if(!byEvent[eid])byEvent[eid]={title:r.events?.title||'Neznámá akce',date:r.events?.date||'',ratings:[]};
+    byEvent[eid].ratings.push(r);
+  });
+
+  const elByEvent=document.getElementById('ratingsListByEvent');
+  if(Object.keys(byEvent).length===0){
+    elByEvent.innerHTML='<div class="empty-state"><div class="icon">⭐</div><p>Zatím žádná hodnocení</p></div>';
+  } else {
+    elByEvent.innerHTML=Object.entries(byEvent).map(([eid,info])=>{
+      const avg=(info.ratings.reduce((s,r)=>s+r.stars,0)/info.ratings.length).toFixed(1);
+      const stars='⭐'.repeat(Math.round(avg));
+      return`<div class="participant" style="flex-wrap:wrap;">
+        <div style="flex:1;"><strong>${esc(info.title)}</strong>
+        <div style="color:var(--stone);font-size:.82rem;">${formatDate(info.date)} · ${stars} ${avg} (${info.ratings.length} hodnocení)</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // All ratings list
+  const elAll=document.getElementById('ratingsListAll');
+  if(all.length===0){
+    elAll.innerHTML='<div class="empty-state"><p>Žádná hodnocení</p></div>';
+  } else {
+    elAll.innerHTML=all.map(r=>{
+      const dt=new Date(r.created_at);
+      const dateStr=dt.toLocaleDateString('cs-CZ')+' '+dt.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
+      return`<div class="participant">
+        <div style="flex:1;"><strong>${'⭐'.repeat(r.stars)}</strong> <span style="color:var(--stone);font-size:.85rem;">${esc(r.events?.title||'')}</span>
+        <div style="color:var(--stone);font-size:.78rem;">${dateStr}${r.comment?' · '+esc(r.comment):''}</div></div>
+      </div>`;
+    }).join('');
+  }
 }
 
 checkSession();
