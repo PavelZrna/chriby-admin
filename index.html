@@ -1091,12 +1091,25 @@ async function uploadGuidePhoto(){
 // USERS
 async function loadUsers(){
   const{data:users}=await db.from('profiles').select('*').order('created_at',{ascending:false});
+  const{data:parts}=await db.from('participations').select('*, events(distance)');
   const{count:tokenCount}=await db.from('push_tokens').select('*',{count:'exact'}).eq('active',true);
   if(!users)return;
-  document.getElementById('statTotalUsers').textContent=users.length;
+
+  // Calculate per-user stats from participations
+  const userStats={};
+  (parts||[]).forEach(p=>{
+    const uid=p.user_id;
+    if(!uid)return;
+    if(!userStats[uid])userStats[uid]={hikes:0,km:0};
+    userStats[uid].hikes+=1;
+    const dist=p.events?.distance;
+    if(dist)userStats[uid].km+=parseFloat(dist)||0;
+  });
+
+  document.getElementById('statTotalUsers').textContent=users.filter(u=>u.role==='visitor').length;
   document.getElementById('statActiveUsers').textContent=tokenCount||0;
-  const totalKm=users.reduce((s,u)=>s+(u.total_km||0),0);
-  document.getElementById('statTotalKm').textContent=totalKm+' km';
+  const totalKm=Object.values(userStats).reduce((s,u)=>s+u.km,0);
+  document.getElementById('statTotalKm').textContent=Math.round(totalKm)+' km';
 
   const el=document.getElementById('usersTable');
   if(users.length===0){el.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>Zatím žádní uživatelé</p></div>';return;}
@@ -1105,14 +1118,15 @@ async function loadUsers(){
 
   el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.85rem;"><thead><tr style="border-bottom:2px solid #e5e5e5;text-align:left;"><th style="padding:.5rem;">Jméno</th><th style="padding:.5rem;">E-mail</th><th style="padding:.5rem;">Úroveň</th><th style="padding:.5rem;">Km</th><th style="padding:.5rem;">Výšlapů</th><th style="padding:.5rem;">Registrace</th></tr></thead><tbody>'+
     users.filter(u=>u.role==='visitor').map(u=>{
+      const stats=userStats[u.id]||{hikes:0,km:0};
       const lvlColor=levelColors[u.reward_level]||'#9CA3AF';
       const regDate=new Date(u.created_at).toLocaleDateString('cs-CZ');
       return`<tr style="border-bottom:1px solid #f0f0f0;">
         <td style="padding:.5rem;font-weight:600;">${esc(u.name||u.full_name||'—')}</td>
         <td style="padding:.5rem;color:var(--stone);">${esc(u.email||'—')}</td>
         <td style="padding:.5rem;"><span style="background:${lvlColor}15;color:${lvlColor};padding:2px 8px;border-radius:4px;font-weight:600;font-size:.8rem;">${esc(u.reward_level||'Nováček')}</span></td>
-        <td style="padding:.5rem;font-weight:600;">${u.total_km||0}</td>
-        <td style="padding:.5rem;">${u.completed_hikes||0}</td>
+        <td style="padding:.5rem;font-weight:600;">${Math.round(stats.km)}</td>
+        <td style="padding:.5rem;">${stats.hikes}</td>
         <td style="padding:.5rem;color:var(--stone);">${regDate}</td>
       </tr>`;
     }).join('')+'</tbody></table>';
