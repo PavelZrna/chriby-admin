@@ -1092,6 +1092,7 @@ async function uploadGuidePhoto(){
 async function loadUsers(){
   const{data:users}=await db.from('profiles').select('*').order('created_at',{ascending:false});
   const{data:parts}=await db.from('participations').select('*, events(distance)');
+  const{data:levels}=await db.from('reward_levels').select('*').order('min_hikes',{ascending:true});
   const{count:tokenCount}=await db.from('push_tokens').select('*',{count:'exact'}).eq('active',true);
   if(!users)return;
 
@@ -1106,6 +1107,14 @@ async function loadUsers(){
     if(dist)userStats[uid].km+=parseFloat(dist)||0;
   });
 
+  // Calculate level from hikes count
+  function getLevel(hikeCount){
+    if(!levels||levels.length===0)return{name:'Nováček',color:'#9CA3AF'};
+    let current=levels[0];
+    for(const lv of levels){if(hikeCount>=lv.min_hikes)current=lv;}
+    return current;
+  }
+
   document.getElementById('statTotalUsers').textContent=users.filter(u=>u.role==='visitor').length;
   document.getElementById('statActiveUsers').textContent=tokenCount||0;
   const totalKm=Object.values(userStats).reduce((s,u)=>s+u.km,0);
@@ -1114,17 +1123,15 @@ async function loadUsers(){
   const el=document.getElementById('usersTable');
   if(users.length===0){el.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>Zatím žádní uživatelé</p></div>';return;}
 
-  const levelColors={Nováček:'#9CA3AF',Turista:'#2D6A4F',Znalec:'#CBA41E',Průvodce:'#8B4513',Veterán:'#7B2D8B'};
-
   el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.85rem;"><thead><tr style="border-bottom:2px solid #e5e5e5;text-align:left;"><th style="padding:.5rem;">Jméno</th><th style="padding:.5rem;">E-mail</th><th style="padding:.5rem;">Úroveň</th><th style="padding:.5rem;">Km</th><th style="padding:.5rem;">Výšlapů</th><th style="padding:.5rem;">Registrace</th></tr></thead><tbody>'+
     users.filter(u=>u.role==='visitor').map(u=>{
       const stats=userStats[u.id]||{hikes:0,km:0};
-      const lvlColor=levelColors[u.reward_level]||'#9CA3AF';
+      const lv=getLevel(stats.hikes);
       const regDate=new Date(u.created_at).toLocaleDateString('cs-CZ');
       return`<tr style="border-bottom:1px solid #f0f0f0;">
         <td style="padding:.5rem;font-weight:600;">${esc(u.name||u.full_name||'—')}</td>
         <td style="padding:.5rem;color:var(--stone);">${esc(u.email||'—')}</td>
-        <td style="padding:.5rem;"><span style="background:${lvlColor}15;color:${lvlColor};padding:2px 8px;border-radius:4px;font-weight:600;font-size:.8rem;">${esc(u.reward_level||'Nováček')}</span></td>
+        <td style="padding:.5rem;"><span style="background:${lv.color}15;color:${lv.color};padding:2px 8px;border-radius:4px;font-weight:600;font-size:.8rem;">${esc(lv.name)}</span></td>
         <td style="padding:.5rem;font-weight:600;">${Math.round(stats.km)}</td>
         <td style="padding:.5rem;">${stats.hikes}</td>
         <td style="padding:.5rem;color:var(--stone);">${regDate}</td>
