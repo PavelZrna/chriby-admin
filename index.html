@@ -616,7 +616,7 @@ async function openConfirmModal(eventId,title){
     return;
   }
 
-  const totalPersons=confirmBookings.reduce((s,b)=>s+(b.participant_count||1),0);
+  const totalPersons=confirmBookings.reduce((s,b)=>s+(b.participants||1),0);
   const confirmedCount=[...confirmedSet].length;
   body.innerHTML=`
     <p style="margin-bottom:.5rem;color:var(--stone);">${confirmBookings.length} přihlášení · ${totalPersons} osob · <strong>${confirmedCount} potvrzených</strong></p>
@@ -625,10 +625,10 @@ async function openConfirmModal(eventId,title){
       const isConf=confirmedSet.has(b.name);
       return`<div class="confirm-row ${isConf?'confirmed':''}">
         <div class="confirm-check">
-          <input type="checkbox" id="conf_${b.id}" data-name="${esc(b.name)}" data-count="${b.participant_count||1}" data-booking="${b.id}" ${isConf?'checked':''} style="width:18px;height:18px;cursor:pointer;" onchange="toggleConfirmStyle(this)">
+          <input type="checkbox" id="conf_${b.id}" data-name="${esc(b.name)}" data-count="${b.participants||1}" data-booking="${b.id}" ${isConf?'checked':''} style="width:18px;height:18px;cursor:pointer;" onchange="toggleConfirmStyle(this)">
           <label for="conf_${b.id}" style="margin:0;text-transform:none;font-size:.9rem;cursor:pointer;">
             <strong>${esc(b.name)}</strong>
-            <span style="color:var(--stone);font-size:.82rem;margin-left:.4rem;">📞 ${esc(b.phone||'—')} · ${b.participant_count||1}×</span>
+            <span style="color:var(--stone);font-size:.82rem;margin-left:.4rem;">📞 ${esc(b.phone||'—')} · ${b.participants||1}×</span>
           </label>
         </div>
         ${isConf?'<span class="badge badge-confirmed">✅ Potvrzeno</span>':''}
@@ -791,11 +791,11 @@ async function loadBookings(){
   el.innerHTML=Object.entries(grouped).map(([eid,g])=>`
     <div class="card"><div class="card-header"><div>
       <h4 class="card-title">${esc(g.title)}</h4>
-      <div class="card-meta">${formatDate(g.date)} · ${g.bookings.length} přihlášení · ${g.bookings.reduce((s,b)=>s+(b.participant_count||1),0)} osob</div>
+      <div class="card-meta">${formatDate(g.date)} · ${g.bookings.length} přihlášení · ${g.bookings.reduce((s,b)=>s+(b.participants||1),0)} osob</div>
     </div></div>
     ${g.bookings.map(b=>`<div class="participant"><div><strong>${esc(b.name)}</strong>
       <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">${esc(b.phone||'')}</span></div>
-      <div class="participant-count">${b.participant_count||1} ${(b.participant_count||1)===1?'osoba':(b.participant_count<=4?'osoby':'osob')}</div></div>`).join('')}
+      <div class="participant-count">${b.participants||1} ${(b.participants||1)===1?'osoba':(b.participants<=4?'osoby':'osob')}</div></div>`).join('')}
     </div>`).join('');
 }
 async function viewBookings(eventId,title){
@@ -804,11 +804,11 @@ async function viewBookings(eventId,title){
   const body=document.getElementById('bookingsModalBody');
   if(!data||data.length===0){body.innerHTML='<div class="empty-state"><p>Zatím nikdo přihlášen</p></div>';}
   else{
-    const tot=data.reduce((s,b)=>s+(b.participant_count||1),0);
+    const tot=data.reduce((s,b)=>s+(b.participants||1),0);
     body.innerHTML=`<p style="margin-bottom:1rem;color:var(--stone);">${data.length} přihlášení · ${tot} osob celkem</p>
       ${data.map(b=>`<div class="participant"><div><strong>${esc(b.name)}</strong>
         <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">📞 ${esc(b.phone||'—')}</span></div>
-        <div class="participant-count">${b.participant_count||1}×</div></div>`).join('')}`;
+        <div class="participant-count">${b.participants||1}×</div></div>`).join('')}`;
   }
   openModal('bookingsModal');
 }
