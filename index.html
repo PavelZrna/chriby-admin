@@ -133,7 +133,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
         <div class="stat-card"><div class="stat-value" id="statTotalParticipants">—</div><div class="stat-label">Lidí na výšlapech</div></div>
         <div class="stat-card"><div class="stat-value" id="statAllKm">—</div><div class="stat-label">Celkem km ušlých</div></div>
         <div class="stat-card"><div class="stat-value" id="statTotalHours">—</div><div class="stat-label">Hodin na výšlapech</div></div>
-        <div class="stat-card"><div class="stat-value" id="statBookings">—</div><div class="stat-label">Přihlášení celkem</div></div>
+        <div class="stat-card"><div class="stat-value" id="statBookings">—</div><div class="stat-label">Přihlášených osob</div></div>
       </div>
       <div class="card"><h3>Nejbližší akce</h3><div id="upcomingList" style="margin-top:1rem;"><div class="loading"><div class="spinner"></div></div></div></div>
     </div>
@@ -470,14 +470,14 @@ async function loadDashboard(){
     db.from('events').select('*',{count:'exact'}).eq('is_past',false),
     db.from('events').select('*').eq('is_past',true),
     db.from('pois').select('*',{count:'exact'}),
-    db.from('bookings').select('*',{count:'exact'}),
+    db.from('bookings').select('participants'),
     db.from('profiles').select('*',{count:'exact'}).eq('role','visitor'),
     db.from('participations').select('*,events(distance,duration)'),
   ]);
   document.getElementById('statEvents').textContent=evR.count??0;
   document.getElementById('statPastEvents').textContent=pastR.data?.length??0;
   document.getElementById('statPois').textContent=poR.count??0;
-  document.getElementById('statBookings').textContent=boR.count??0;
+  const totalBookedPersons=(boR.data||[]).reduce((s,b)=>s+(b.participants||1),0); document.getElementById('statBookings').textContent=totalBookedPersons;
   document.getElementById('statUsers').textContent=usR.count??0;
 
   // Calculate totals from participations
