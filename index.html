@@ -969,6 +969,7 @@ function renderNotifLog(logs){
         <div style="color:var(--stone);font-size:.82rem;">${esc(l.body).substring(0,100)}${l.body.length>100?'…':''}</div>
         <div style="color:var(--stone);font-size:.78rem;margin-top:.2rem;">📅 ${dateStr} · 🎯 ${targetLabel} · 📱 ${l.tokens_count} zařízení · ✅ ${l.success_count} doručeno</div>
       </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteNotifLog('${l.id}')" style="margin-left:.5rem;">🗑️</button>
     </div>`;
   }).join('');
 }
@@ -976,6 +977,14 @@ function renderNotifLog(logs){
 function toggleEventSelect(){
   const target=document.getElementById('notifTarget').value;
   document.getElementById('notifEventGroup').style.display=target==='participants'?'block':'none';
+}
+
+async function deleteNotifLog(id){
+  if(!confirm('Smazat záznam notifikace?'))return;
+  const{error}=await db.from('notification_log').delete().eq('id',id);
+  if(error){showToast('Chyba: '+error.message,true);return;}
+  showToast('Záznam smazán');
+  loadNotifications();
 }
 
 const TEMPLATES={
