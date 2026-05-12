@@ -625,7 +625,7 @@ async function openConfirmModal(eventId,title){
       const isConf=confirmedSet.has(b.name);
       return`<div class="confirm-row ${isConf?'confirmed':''}">
         <div class="confirm-check">
-          <input type="checkbox" id="conf_${b.id}" data-name="${esc(b.name)}" data-count="${b.participants||1}" data-booking="${b.id}" ${isConf?'checked':''} style="width:18px;height:18px;cursor:pointer;" onchange="toggleConfirmStyle(this)">
+          <input type="checkbox" id="conf_${b.id}" data-name="${esc(b.name)}" data-count="${b.participants||1}" data-booking="${b.id}" data-userid="${b.user_id||""}" ${isConf?'checked':''} style="width:18px;height:18px;cursor:pointer;" onchange="toggleConfirmStyle(this)">
           <label for="conf_${b.id}" style="margin:0;text-transform:none;font-size:.9rem;cursor:pointer;">
             <strong>${esc(b.name)}</strong>
             <span style="color:var(--stone);font-size:.82rem;margin-left:.4rem;">📞 ${esc(b.phone||'—')} · ${b.participants||1}×</span>
@@ -651,7 +651,7 @@ async function saveParticipations(){
     const count=parseInt(cb.dataset.count)||1;
     const bookingId=cb.dataset.booking;
     if(cb.checked&&!confirmedSet.has(name)){
-      toConfirm.push({event_id:confirmEventId,participant_name:name,participant_count:count,booking_id:parseInt(bookingId),confirmed_by:currentUser.id});
+      const uid=cb.dataset.userid||null;toConfirm.push({event_id:confirmEventId,user_id:uid,participant_name:name,participant_count:count,booking_id:parseInt(bookingId),confirmed_by:currentUser.id});
     }
     if(!cb.checked&&confirmedSet.has(name)){
       toRemove.push(name);
