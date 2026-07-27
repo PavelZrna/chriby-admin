@@ -113,6 +113,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Přehled</button>
     <button class="tab" data-tab="events" onclick="switchTab('events')">🥾 Akce</button>
     <button class="tab" data-tab="pois" onclick="switchTab('pois')">📍 Místa</button>
+    <button class="tab" data-tab="categories" onclick="switchTab('categories')">🏷️ Kategorie</button>
     <button class="tab" data-tab="guide" onclick="switchTab('guide')">👤 Průvodce</button>
     <button class="tab" data-tab="bookings" onclick="switchTab('bookings')">📋 Přihlášení</button>
     <button class="tab" data-tab="levels" onclick="switchTab('levels')">🏆 Úrovně</button>
@@ -179,6 +180,14 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <div class="tab-panel" id="panel-bookings">
       <h2 style="margin-bottom:1.2rem;">Přihlášení na akce</h2>
       <div id="bookingsList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <div class="tab-panel" id="panel-categories">
+      <h2 style="margin-bottom:1.2rem;">🏷️ Kategorie míst</h2>
+      <div class="card">
+        <p class="form-hint" style="margin-bottom:1rem;">Ikona, název a barva kategorie. Změny se v aplikaci projeví po jejím dalším spuštění nebo po stažení dolů (obnovení).</p>
+        <div id="categoriesList"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-levels">
@@ -413,6 +422,21 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
   </div>
 </div></div>
 
+<div class="modal-overlay" id="categoryModal"><div class="modal">
+  <div class="modal-header"><h3>Upravit kategorii</h3><button class="modal-close" onclick="closeModal('categoryModal')">&times;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="catId">
+    <div class="form-group"><label>Ikona (emoji)</label><input type="text" id="catEmoji" maxlength="8" style="font-size:1.6rem;width:5rem;text-align:center;"><p class="form-hint">Jedno emoji. Doporučení: 🏰 hrad · 🌲 příroda · 🗼 rozhledna · ⛪ poutní · 🥾 trasa · 🪨 skála · 🛣️ dálnice · 🛏️ ubytování · 🍽️ restaurace</p></div>
+    <div class="form-group"><label>Název</label><input type="text" id="catLabel"></div>
+    <div class="form-group"><label>Barva</label><input type="color" id="catColor" style="width:60px;height:36px;"></div>
+    <div class="form-group"><label>Pořadí</label><input type="number" id="catSort" min="1"></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('categoryModal')">Zrušit</button>
+    <button class="btn btn-primary" onclick="saveCategory()">Uložit</button>
+  </div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -448,7 +472,7 @@ function showApp(user){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   document.getElementById('userEmail').textContent=user.email;
-  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();loadUsers();loadRatings();
+  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();loadUsers();loadRatings();loadCategories();
 }
 document.getElementById('loginPassword').addEventListener('keyup',(e)=>{if(e.key==='Enter')handleLogin();});
 
@@ -1249,6 +1273,53 @@ async function deleteGalleryPhoto(photoId){
   await db.from('poi_photos').delete().eq('id',photoId);
   showToast('Fotka smazána');
   loadPoiGallery(currentPoiIdForGallery);
+}
+
+// KATEGORIE
+let allCategories=[];
+async function loadCategories(){
+  const{data,error}=await db.from('categories').select('*').order('sort_order');
+  const el=document.getElementById('categoriesList');
+  if(error){el.innerHTML='<p style="color:#e32400;">Chyba: '+esc(error.message)+'</p>';return;}
+  allCategories=data||[];
+  if(allCategories.length===0){el.innerHTML='<div class="empty-state"><div class="icon">🏷️</div><p>Žádné kategorie</p></div>';return;}
+  el.innerHTML=allCategories.map(c=>`
+    <div class="participant">
+      <div style="flex:1;display:flex;align-items:center;gap:.8rem;">
+        <span style="font-size:1.6rem;">${esc(c.emoji||'📍')}</span>
+        <div>
+          <strong>${esc(c.label||c.id)}</strong>
+          <div style="color:var(--stone);font-size:.8rem;">${esc(c.id)}${c.is_partner?' · partnerská':''}</div>
+        </div>
+        <span style="width:18px;height:18px;border-radius:50%;background:${esc(c.color||'#888')};display:inline-block;margin-left:.4rem;"></span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="editCategory('${esc(c.id)}')">✏️ Upravit</button>
+    </div>`).join('');
+}
+
+function editCategory(id){
+  const c=allCategories.find(x=>x.id===id); if(!c)return;
+  document.getElementById('catId').value=c.id;
+  document.getElementById('catEmoji').value=c.emoji||'';
+  document.getElementById('catLabel').value=c.label||'';
+  document.getElementById('catColor').value=c.color||'#888888';
+  document.getElementById('catSort').value=c.sort_order||1;
+  openModal('categoryModal');
+}
+
+async function saveCategory(){
+  const id=document.getElementById('catId').value;
+  const payload={
+    emoji:document.getElementById('catEmoji').value.trim()||'📍',
+    label:document.getElementById('catLabel').value.trim(),
+    color:document.getElementById('catColor').value,
+    sort_order:parseInt(document.getElementById('catSort').value)||1,
+  };
+  if(!payload.label){showToast('Vyplňte název',true);return;}
+  const{error}=await db.from('categories').update(payload).eq('id',id);
+  if(error){showToast('Chyba: '+error.message,true);return;}
+  showToast('Kategorie upravena');
+  closeModal('categoryModal');loadCategories();
 }
 
 checkSession();
