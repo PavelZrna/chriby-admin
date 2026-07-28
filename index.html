@@ -119,6 +119,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <button class="tab" data-tab="levels" onclick="switchTab('levels')">🏆 Úrovně</button>
     <button class="tab" data-tab="users" onclick="switchTab('users')">👥 Uživatelé</button>
     <button class="tab" data-tab="ratings" onclick="switchTab('ratings')">⭐ Hodnocení</button>
+    <button class="tab" data-tab="appcfg" onclick="switchTab('appcfg')">⚙️ Verze aplikace</button>
     <button class="tab" data-tab="notifications" onclick="switchTab('notifications')">🔔 Notifikace</button>
   </div>
   <div class="content">
@@ -233,6 +234,17 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       <div class="card" style="margin-top:1rem;">
         <h3 style="margin-bottom:1rem;">Všechna hodnocení</h3>
         <div id="ratingsListAll"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-appcfg">
+      <h2 style="margin-bottom:1.2rem;">⚙️ Verze aplikace</h2>
+      <div class="card">
+        <p class="form-hint" style="margin-bottom:1rem;">Řídí upozornění na aktualizaci uvnitř aplikace. <strong>Nejnovější verzi zvyšte až po vydání nového buildu v Google Play</strong> — jinak upozornění uvidí i lidé, kteří nemají co stahovat.</p>
+        <div class="form-group"><label>Nejnovější verze (versionCode)</label><input type="number" id="cfgLatest" min="1"><p class="form-hint">Kdo má nižší, uvidí žlutý pruh s odkazem na Google Play. Pruh lze zavřít.</p></div>
+        <div class="form-group"><label>Minimální povolená verze (versionCode)</label><input type="number" id="cfgMin" min="1"><p class="form-hint">Kdo má nižší, dostane nezavíratelnou výzvu k aktualizaci. Používejte jen výjimečně.</p></div>
+        <div class="form-group"><label>Text upozornění</label><textarea id="cfgMsg" rows="2"></textarea></div>
+        <button class="btn btn-primary" onclick="saveAppConfig()">Uložit</button>
       </div>
     </div>
 
@@ -472,7 +484,7 @@ function showApp(user){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   document.getElementById('userEmail').textContent=user.email;
-  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();loadUsers();loadRatings();loadCategories();
+  loadDashboard();loadEvents();loadPois();loadGuide();loadBookings();loadLevels();loadMilestones();loadNotifications();loadUsers();loadRatings();loadCategories();loadAppConfig();
 }
 document.getElementById('loginPassword').addEventListener('keyup',(e)=>{if(e.key==='Enter')handleLogin();});
 
@@ -1320,6 +1332,34 @@ async function saveCategory(){
   if(error){showToast('Chyba: '+error.message,true);return;}
   showToast('Kategorie upravena');
   closeModal('categoryModal');loadCategories();
+}
+
+// VERZE APLIKACE
+async function loadAppConfig(){
+  const{data,error}=await db.from('app_config').select('key,value');
+  if(error){console.log('app_config:',error.message);return;}
+  const c={};(data||[]).forEach(r=>{c[r.key]=r.value;});
+  document.getElementById('cfgLatest').value=c.latest_version_code||'';
+  document.getElementById('cfgMin').value=c.min_version_code||'';
+  document.getElementById('cfgMsg').value=c.update_message||'';
+}
+
+async function saveAppConfig(){
+  const latest=document.getElementById('cfgLatest').value.trim();
+  const min=document.getElementById('cfgMin').value.trim();
+  const msg=document.getElementById('cfgMsg').value.trim();
+  if(!latest||!min){showToast('Vyplňte obě verze',true);return;}
+  if(parseInt(min)>parseInt(latest)){showToast('Minimální verze nesmí být vyšší než nejnovější',true);return;}
+  const rows=[
+    {key:'latest_version_code',value:latest},
+    {key:'min_version_code',value:min},
+    {key:'update_message',value:msg||'Je k dispozici nová verze aplikace.'},
+  ];
+  for(const r of rows){
+    const{error}=await db.from('app_config').update({value:r.value,updated_at:new Date().toISOString()}).eq('key',r.key);
+    if(error){showToast('Chyba: '+error.message,true);return;}
+  }
+  showToast('Uloženo');loadAppConfig();
 }
 
 checkSession();
