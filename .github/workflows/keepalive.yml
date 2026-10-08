@@ -14,6 +14,6 @@ jobs:
           code=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            "https://eqilmetmujdgzidvrjuh.supabase.co/rest/v1/places?select=id&limit=1")
+            "https://eqilmetmujdgzidvrjuh.supabase.co/rest/v1/categories?select=id&limit=1")
           echo "HTTP $code"
           test "$code" = "200"
