@@ -11,25 +11,12 @@ jobs:
     steps:
       - name: Ping Supabase
         env:
-          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxaWxtZXRtdWpkZ3ppZHZyanVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTA2NzEsImV4cCI6MjA5MDEyNjY3MX0._87V0SKDRCRJONbgHvIYA_FlrBVMZyx8_kCcz1N5DEk
         run: |
-          if [ -z "$KEY" ]; then
-            echo "CHYBA: secret SUPABASE_ANON_KEY neni nastaveny nebo je prazdny"
-            exit 1
-          fi
-          echo "Delka klice: ${#KEY} (ocekavano 208)"
-
           code=$(curl -s -o /tmp/out.json -w "%{http_code}" \
             -H "apikey: $KEY" \
             -H "Authorization: Bearer $KEY" \
             "https://eqilmetmujdgzidvrjuh.supabase.co/rest/v1/categories?select=id&limit=1")
-
           echo "HTTP $code"
           echo "Odpoved: $(cat /tmp/out.json)"
-
-          if [ "$code" = "200" ]; then
-            echo "OK - projekt probuzen"
-          else
-            echo "SELHALO"
-            exit 1
-          fi
+          test "$code" = "200"
