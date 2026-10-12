@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nové heslo — Chřibský průvodce</title>
+<style>
+  :root{ --forest:#2D6A4F; --forest-dark:#1B4332; --cream:#FDFBF6;
+         --ink:#23262B; --muted:#5F6670; --line:#E4E2DA; --danger:#B3261E; --ok:#2D6A4F; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       -webkit-font-smoothing:antialiased;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+  .card{width:100%;max-width:420px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  header{background:var(--forest);color:#fff;padding:26px 24px}
+  header h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+  header p{margin:4px 0 0;font-size:13.5px;opacity:.85}
+  main{padding:24px}
+  label{display:block;font-size:13.5px;font-weight:600;margin:0 0 6px;color:var(--forest-dark)}
+  input{width:100%;padding:12px 14px;font-size:16px;border:1px solid var(--line);
+        border-radius:8px;background:#fff;color:var(--ink);margin-bottom:16px}
+  input:focus{outline:2px solid var(--forest);outline-offset:1px;border-color:var(--forest)}
+  button{width:100%;padding:13px;font-size:15px;font-weight:700;color:#fff;background:var(--forest);
+         border:0;border-radius:8px;cursor:pointer}
+  button:disabled{opacity:.55;cursor:default}
+  .msg{padding:12px 14px;border-radius:8px;font-size:14px;margin:0 0 16px;display:none}
+  .msg.err{background:#FDECEA;color:var(--danger);border:1px solid #F3C9C5;display:block}
+  .msg.ok{background:#EAF3EE;color:var(--ok);border:1px solid #C6E0D1;display:block}
+  .hint{font-size:12.5px;color:var(--muted);margin:14px 0 0;line-height:1.5}
+  .center{text-align:center}
+  footer{border-top:1px solid var(--line);padding:14px 24px;font-size:12.5px;color:var(--muted);text-align:center}
+  a{color:var(--forest)}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <header>
+    <h1>Nové heslo</h1>
+    <p>Chřibský průvodce</p>
+  </header>
+
+  <main>
+    <div id="msg" class="msg"></div>
+
+    <form id="form" style="display:none">
+      <label for="pw1">Nové heslo</label>
+      <input id="pw1" type="password" autocomplete="new-password" minlength="8" required
+             placeholder="alespoň 8 znaků">
+
+      <label for="pw2">Heslo znovu</label>
+      <input id="pw2" type="password" autocomplete="new-password" minlength="8" required
+             placeholder="pro kontrolu">
+
+      <button id="btn" type="submit">Nastavit heslo</button>
+      <p class="hint">Po nastavení se vraťte do aplikace a přihlaste se novým heslem.</p>
+    </form>
+
+    <div id="loading" class="center" style="color:var(--muted);font-size:14px">
+      Načítám…
+    </div>
+  </main>
+
+  <footer>
+    Potíže? Napište na <a href="mailto:chribsky.pruvodce@gmail.com">chribsky.pruvodce@gmail.com</a>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://eqilmetmujdgzidvrjuh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxaWxtZXRtdWpkZ3ppZHZyanVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTA2NzEsImV4cCI6MjA5MDEyNjY3MX0._87V0SKDRCRJONbgHvIYA_FlrBVMZyx8_kCcz1N5DEk';
+
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { detectSessionInUrl: true, flowType: 'implicit', persistSession: false }
+});
+
+const msgEl = document.getElementById('msg');
+const formEl = document.getElementById('form');
+const loadEl = document.getElementById('loading');
+const btn = document.getElementById('btn');
+
+function show(kind, text) {
+  msgEl.className = 'msg ' + kind;
+  msgEl.textContent = text;
+}
+
+function fail(text) {
+  loadEl.style.display = 'none';
+  formEl.style.display = 'none';
+  show('err', text);
+}
+
+(async function init() {
+  // Chyba primo z odkazu (vyprseny / jiz pouzity)
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const query = new URLSearchParams(location.search);
+  const errDesc = hash.get('error_description') || query.get('error_description');
+  if (errDesc) {
+    return fail('Odkaz už neplatí (' + errDesc + '). Vyžádejte si v aplikaci nový.');
+  }
+
+  // PKCE varianta: ?code=...
+  const code = query.get('code');
+  if (code) {
+    const { error } = await client.auth.exchangeCodeForSession(code);
+    if (error) return fail('Odkaz se nepodařilo ověřit. Vyžádejte si v aplikaci nový.');
+  }
+
+  // Implicit varianta: #access_token=... — zpracuje detectSessionInUrl
+  let { data: { session } } = await client.auth.getSession();
+
+  if (!session) {
+    // dej klientovi chvili na zpracovani fragmentu
+    await new Promise(r => setTimeout(r, 600));
+    ({ data: { session } } = await client.auth.getSession());
+  }
+
+  if (!session) {
+    return fail('Odkaz je neplatný nebo už vypršel. Otevřete aplikaci, klepněte na „Zapomenuté heslo" a nechte si poslat nový.');
+  }
+
+  loadEl.style.display = 'none';
+  formEl.style.display = 'block';
+})();
+
+formEl.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const a = document.getElementById('pw1').value;
+  const b = document.getElementById('pw2').value;
+
+  if (a.length < 8) return show('err', 'Heslo musí mít alespoň 8 znaků.');
+  if (a !== b)      return show('err', 'Hesla se neshodují.');
+
+  btn.disabled = true;
+  btn.textContent = 'Ukládám…';
+
+  const { error } = await client.auth.updateUser({ password: a });
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = 'Nastavit heslo';
+    return show('err', 'Nepodařilo se uložit: ' + error.message);
+  }
+
+  formEl.style.display = 'none';
+  show('ok', 'Heslo bylo změněno. Vraťte se do aplikace a přihlaste se novým heslem.');
+  await client.auth.signOut();
+});
+</script>
+</body>
+</html>
