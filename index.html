@@ -240,10 +240,24 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
     <div class="tab-panel" id="panel-appcfg">
       <h2 style="margin-bottom:1.2rem;">⚙️ Verze aplikace</h2>
       <div class="card">
-        <p class="form-hint" style="margin-bottom:1rem;">Řídí upozornění na aktualizaci uvnitř aplikace. <strong>Nejnovější verzi zvyšte až po vydání nového buildu v Google Play</strong> — jinak upozornění uvidí i lidé, kteří nemají co stahovat.</p>
-        <div class="form-group"><label>Nejnovější verze (versionCode)</label><input type="number" id="cfgLatest" min="1"><p class="form-hint">Kdo má nižší, uvidí žlutý pruh s odkazem na Google Play. Pruh lze zavřít.</p></div>
-        <div class="form-group"><label>Minimální povolená verze (versionCode)</label><input type="number" id="cfgMin" min="1"><p class="form-hint">Kdo má nižší, dostane nezavíratelnou výzvu k aktualizaci. Používejte jen výjimečně.</p></div>
-        <div class="form-group"><label>Text upozornění</label><textarea id="cfgMsg" rows="2"></textarea></div>
+        <p class="form-hint" style="margin-bottom:1.2rem;">Řídí upozornění na aktualizaci uvnitř aplikace. Každá platforma má vlastní čísla — <strong>Android počítá versionCode, iPhone číslo buildu</strong> a navzájem spolu nesouvisí. <strong>Číslo zvyšte až když je nová verze opravdu ke stažení v obchodě</strong>, jinak upozornění uvidí i lidé, kteří nemají co stahovat.</p>
+
+        <div style="border:1px solid var(--line,#e4e2da);border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem;">
+          <h3 style="font-size:.95rem;margin:0 0 .15rem;">🤖 Android — Google Play</h3>
+          <p class="form-hint" style="margin:0 0 .9rem;">Číslo z pole <code>versionCode</code> v app.json, ne verze 1.0.2. Co je právě v Play, najdete v Play Console → Vydání → Produkce.</p>
+          <div class="form-group"><label>Nejnovější verze (versionCode)</label><input type="number" id="cfgLatest" min="1"><p class="form-hint">Kdo má nižší, uvidí žlutý pruh s odkazem na Google Play. Pruh lze zavřít.</p></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Minimální povolená verze (versionCode)</label><input type="number" id="cfgMin" min="1"><p class="form-hint">Kdo má nižší, dostane nezavíratelnou výzvu. Používejte jen výjimečně.</p></div>
+        </div>
+
+        <div style="border:1px solid var(--line,#e4e2da);border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem;">
+          <h3 style="font-size:.95rem;margin:0 0 .15rem;">🍎 iPhone — App Store</h3>
+          <p class="form-hint" style="margin:0 0 .9rem;">Číslo z pole <code>buildNumber</code> v app.json, ne verze 1.0.2. Aktuálně v App Store: <span id="cfgIosNow">—</span></p>
+          <div class="form-group"><label>Nejnovější build (buildNumber)</label><input type="number" id="cfgLatestIos" min="1"><p class="form-hint">Kdo má nižší, uvidí žlutý pruh s odkazem na App Store. Pruh lze zavřít.</p></div>
+          <div class="form-group"><label>Minimální povolený build (buildNumber)</label><input type="number" id="cfgMinIos" min="1"><p class="form-hint">Kdo má nižší, dostane nezavíratelnou výzvu. Používejte jen výjimečně.</p></div>
+          <div class="form-group" style="margin-bottom:0;"><label>ID aplikace v App Store</label><input type="text" id="cfgIosAppId" placeholder="6820550814"><p class="form-hint">Bez něj se na iPhonech pruh neukáže vůbec — aplikace by uživatele poslala do Google Play.</p></div>
+        </div>
+
+        <div class="form-group"><label>Text upozornění</label><textarea id="cfgMsg" rows="2"></textarea><p class="form-hint">Společný pro obě platformy.</p></div>
         <button class="btn btn-primary" onclick="saveAppConfig()">Uložit</button>
       </div>
     </div>
@@ -1366,18 +1380,42 @@ async function loadAppConfig(){
   const c={};(data||[]).forEach(r=>{c[r.key]=r.value;});
   document.getElementById('cfgLatest').value=c.latest_version_code||'';
   document.getElementById('cfgMin').value=c.min_version_code||'';
+  document.getElementById('cfgLatestIos').value=c.latest_build_ios||'';
+  document.getElementById('cfgMinIos').value=c.min_build_ios||'';
+  document.getElementById('cfgIosAppId').value=c.ios_app_id||'';
   document.getElementById('cfgMsg').value=c.update_message||'';
+  loadStoreVersions(c.ios_app_id);
+}
+
+// Doplni, co je skutecne v obchodech - jen informativne, nic neuklada.
+async function loadStoreVersions(iosAppId){
+  const elI=document.getElementById('cfgIosNow');
+  if(!elI) return;
+  if(!iosAppId){elI.textContent='nenastaveno ID aplikace';return;}
+  try{
+    const r=await fetch('https://itunes.apple.com/lookup?id='+encodeURIComponent(iosAppId));
+    const j=await r.json();
+    elI.textContent=(j.results&&j.results[0])?('verze '+j.results[0].version):'nenalezeno';
+  }catch(e){elI.textContent='nepodařilo se zjistit';}
 }
 
 async function saveAppConfig(){
   const latest=document.getElementById('cfgLatest').value.trim();
   const min=document.getElementById('cfgMin').value.trim();
+  const latestIos=document.getElementById('cfgLatestIos').value.trim();
+  const minIos=document.getElementById('cfgMinIos').value.trim();
+  const iosAppId=document.getElementById('cfgIosAppId').value.trim();
   const msg=document.getElementById('cfgMsg').value.trim();
-  if(!latest||!min){showToast('Vyplňte obě verze',true);return;}
-  if(parseInt(min)>parseInt(latest)){showToast('Minimální verze nesmí být vyšší než nejnovější',true);return;}
+  if(!latest||!min){showToast('Vyplňte obě čísla u Androidu',true);return;}
+  if(!latestIos||!minIos){showToast('Vyplňte obě čísla u iPhonu',true);return;}
+  if(parseInt(min)>parseInt(latest)){showToast('Android: minimální verze nesmí být vyšší než nejnovější',true);return;}
+  if(parseInt(minIos)>parseInt(latestIos)){showToast('iPhone: minimální build nesmí být vyšší než nejnovější',true);return;}
   const rows=[
     {key:'latest_version_code',value:latest},
     {key:'min_version_code',value:min},
+    {key:'latest_build_ios',value:latestIos},
+    {key:'min_build_ios',value:minIos},
+    {key:'ios_app_id',value:iosAppId},
     {key:'update_message',value:msg||'Je k dispozici nová verze aplikace.'},
   ];
   for(const r of rows){
