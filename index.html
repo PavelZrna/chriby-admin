@@ -211,7 +211,7 @@ h1,h2,h3,h4{font-family:'Merriweather',serif}
       <h2 style="margin-bottom:1.2rem;">👥 Uživatelé</h2>
       <div class="stats-bar" style="grid-template-columns:repeat(3,1fr);">
         <div class="stat-card"><div class="stat-value" id="statTotalUsers">—</div><div class="stat-label">Registrovaní</div></div>
-        <div class="stat-card"><div class="stat-value" id="statActiveUsers">—</div><div class="stat-label">S notifikacemi</div></div>
+        <div class="stat-card"><div class="stat-value" id="statActiveUsers">—</div><div class="stat-label">S notifikacemi</div><div id="statPlatformSplit" style="font-size:.75rem;color:var(--stone);margin-top:4px;"></div></div>
         <div class="stat-card"><div class="stat-value" id="statTotalKm">—</div><div class="stat-label">Celkem km</div></div>
       </div>
       <div class="card">
@@ -1148,7 +1148,17 @@ async function loadUsers(){
   const{data:users}=await db.from('profiles').select('*').order('created_at',{ascending:false});
   const{data:parts}=await db.from('participations').select('*, events(distance)');
   const{data:levels}=await db.from('reward_levels').select('*').order('min_hikes',{ascending:true});
-  const{count:tokenCount}=await db.from('push_tokens').select('*',{count:'exact'}).eq('active',true);
+  const{data:tokenRows}=await db.from('push_tokens').select('user_id,platform,device_name').eq('active',true);
+  const tokenCount=(tokenRows||[]).length;
+  // mapa uzivatel -> seznam platforem
+  const userPlatforms={};
+  (tokenRows||[]).forEach(t=>{
+    if(!t.user_id)return;
+    if(!userPlatforms[t.user_id])userPlatforms[t.user_id]=new Set();
+    userPlatforms[t.user_id].add(t.platform||'?');
+  });
+  const iosCount=(tokenRows||[]).filter(t=>t.platform==='ios').length;
+  const androidCount=(tokenRows||[]).filter(t=>t.platform==='android').length;
   if(!users)return;
 
   // Calculate per-user stats from participations
@@ -1172,13 +1182,27 @@ async function loadUsers(){
 
   document.getElementById('statTotalUsers').textContent=users.filter(u=>u.role==='visitor').length;
   document.getElementById('statActiveUsers').textContent=tokenCount||0;
+  const splitEl=document.getElementById('statPlatformSplit');
+  if(splitEl)splitEl.textContent=` iPhone ${iosCount} · 🤖 Android ${androidCount}`;
   const totalKm=Object.values(userStats).reduce((s,u)=>s+u.km,0);
   document.getElementById('statTotalKm').textContent=Math.round(totalKm)+' km';
+
+  function platformBadges(uid){
+    const set=userPlatforms[uid];
+    if(!set||set.size===0)
+      return '<span title="Nemá povolená oznámení" style="color:#B0AFA8;font-size:.9rem;">—</span>';
+    const map={ios:{t:'iPhone',e:'',bg:'#EDF2F7',fg:'#2D3748'},
+               android:{t:'Android',e:'🤖',bg:'#E8F5EC',fg:'#2D6A4F'}};
+    return [...set].map(p=>{
+      const m=map[p]||{t:p,e:'📱',bg:'#F3F1E9',fg:'#5F6670'};
+      return `<span title="${m.t}" style="background:${m.bg};color:${m.fg};padding:2px 7px;border-radius:4px;font-size:.78rem;font-weight:600;margin-right:3px;white-space:nowrap;">${m.e} ${m.t}</span>`;
+    }).join('');
+  }
 
   const el=document.getElementById('usersTable');
   if(users.length===0){el.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>Zatím žádní uživatelé</p></div>';return;}
 
-  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.85rem;"><thead><tr style="border-bottom:2px solid #e5e5e5;text-align:left;"><th style="padding:.5rem;">Jméno</th><th style="padding:.5rem;">E-mail</th><th style="padding:.5rem;">Úroveň</th><th style="padding:.5rem;">Km</th><th style="padding:.5rem;">Výšlapů</th><th style="padding:.5rem;">Registrace</th></tr></thead><tbody>'+
+  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.85rem;"><thead><tr style="border-bottom:2px solid #e5e5e5;text-align:left;"><th style="padding:.5rem;">Jméno</th><th style="padding:.5rem;">E-mail</th><th style="padding:.5rem;">Zařízení</th><th style="padding:.5rem;">Úroveň</th><th style="padding:.5rem;">Km</th><th style="padding:.5rem;">Výšlapů</th><th style="padding:.5rem;">Registrace</th></tr></thead><tbody>'+
     users.filter(u=>u.role==='visitor').map(u=>{
       const stats=userStats[u.id]||{hikes:0,km:0};
       const lv=getLevel(stats.hikes);
@@ -1186,6 +1210,7 @@ async function loadUsers(){
       return`<tr style="border-bottom:1px solid #f0f0f0;">
         <td style="padding:.5rem;font-weight:600;">${esc(u.name||u.full_name||'—')}</td>
         <td style="padding:.5rem;color:var(--stone);">${esc(u.email||'—')}</td>
+        <td style="padding:.5rem;">${platformBadges(u.id)}</td>
         <td style="padding:.5rem;"><span style="background:${lv.color}15;color:${lv.color};padding:2px 8px;border-radius:4px;font-weight:600;font-size:.8rem;">${esc(lv.name)}</span></td>
         <td style="padding:.5rem;font-weight:600;">${Math.round(stats.km)}</td>
         <td style="padding:.5rem;">${stats.hikes}</td>
