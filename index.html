@@ -633,7 +633,18 @@ async function saveEvent(){
 async function deleteEvent(id){
   if(!confirm('Opravdu smazat tuto akci?'))return;
   const{error}=await db.from('events').delete().eq('id',id);
-  if(error){showToast('Chyba mazání',true);return;}
+  if(error){
+    const m=((error.message||'')+' '+(error.details||'')).toLowerCase();
+    if(error.code==='23503'||m.includes('foreign key')||m.includes('violates')){
+      alert('Akci nelze smazat — jsou na ni navázaní účastníci.\n\n'+
+            'Smazáním by lidé přišli o zapsaný výšlap, a tím i o nachozené kilometry a úroveň. '+
+            'Použijte místo toho tlačítko „Označit jako proběhlou“ — akce zmizí z nabídky, ale historie zůstane.\n\n'+
+            'Jde-li o testovací akci, odhlaste nejdřív účastníky a pak ji smažte.');
+    } else {
+      showToast('Chyba mazání: '+(error.message||'neznámá chyba'),true);
+    }
+    return;
+  }
   showToast('Akce smazána');loadEvents();loadDashboard();
 }
 async function markPast(id){
@@ -846,7 +857,10 @@ async function loadBookings(){
     </div></div>
     ${g.bookings.map(b=>`<div class="participant"><div><strong>${esc(b.name)}</strong>
       <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">${esc(b.phone||'')}</span></div>
-      <div class="participant-count">${b.participants||1} ${(b.participants||1)===1?'osoba':(b.participants<=4?'osoby':'osob')}</div></div>`).join('')}
+      <div style="display:flex;align-items:center;gap:.6rem;">
+      <span class="participant-count">${b.participants||1} ${(b.participants||1)===1?'osoba':(b.participants<=4?'osoby':'osob')}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteBooking(${b.id},'${esc(b.name).replace(/'/g,"\\'")}',${b.event_id},'bookings')">Odhlásit</button>
+      </div></div>`).join('')}
     </div>`).join('');
 }
 async function viewBookings(eventId,title){
@@ -859,9 +873,43 @@ async function viewBookings(eventId,title){
     body.innerHTML=`<p style="margin-bottom:1rem;color:var(--stone);">${data.length} přihlášení · ${tot} osob celkem</p>
       ${data.map(b=>`<div class="participant"><div><strong>${esc(b.name)}</strong>
         <span style="color:var(--stone);font-size:.82rem;margin-left:.5rem;">📞 ${esc(b.phone||'—')}</span></div>
-        <div class="participant-count">${b.participants||1}×</div></div>`).join('')}`;
+        <div style="display:flex;align-items:center;gap:.6rem;">
+        <span class="participant-count">${b.participants||1}×</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteBooking(${b.id},'${esc(b.name).replace(/'/g,"\\'")}',${eventId},'modal')">Odhlásit</button>
+        </div></div>`).join('')}`;
   }
   openModal('bookingsModal');
+}
+
+// Odhlasi ucastnika z akce. Poradi je dulezite: nejdriv participations
+// (maji cizi klic na booking), pak samotne prihlaseni, pak prepocet kapacity.
+async function deleteBooking(bookingId,name,eventId,from){
+  if(!confirm('Odhlásit '+name+' z této akce?\n\nZruší se i potvrzená účast, takže se o tenhle výšlap sníží nachozené kilometry.'))return;
+
+  const p=await db.from('participations').delete().eq('booking_id',bookingId);
+  if(p.error){showToast('Chyba: '+p.error.message,true);return;}
+
+  // .select() vrati smazane radky - prazdne pole znamena, ze to zablokovalo RLS,
+  // coz Supabase nehlasi jako chybu a vypadalo by to jako uspech.
+  const b=await db.from('bookings').delete().eq('id',bookingId).select();
+  if(b.error){showToast('Chyba: '+b.error.message,true);return;}
+  if(!b.data||b.data.length===0){
+    alert('Přihlášení se nepodařilo smazat.\n\nDatabáze mazání odmítla — na tabulce bookings chybí pravidlo, které by ho adminovi povolilo. Napiš mi to a doplníme ho.');
+    return;
+  }
+
+  await recalcEventCount(eventId);
+
+  showToast(name+' odhlášen');
+  loadBookings();loadEvents();loadDashboard();
+  if(from==='modal')viewBookings(eventId,document.getElementById('bookingsModalTitle').textContent.replace('Přihlášení — ',''));
+}
+
+// Prepocet obsazenosti ze zbylych potvrzenych prihlaseni - stejne jako to dela aplikace.
+async function recalcEventCount(eventId){
+  const{data}=await db.from('bookings').select('participants').eq('event_id',eventId).eq('status','confirmed');
+  const total=(data||[]).reduce((s,x)=>s+(x.participants||1),0);
+  await db.from('events').update({current_participants:total}).eq('id',eventId);
 }
 
 // LEVELS
