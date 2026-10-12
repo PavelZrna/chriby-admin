@@ -632,20 +632,41 @@ async function saveEvent(){
 }
 async function deleteEvent(id){
   if(!confirm('Opravdu smazat tuto akci?'))return;
-  const{error}=await db.from('events').delete().eq('id',id);
-  if(error){
-    const m=((error.message||'')+' '+(error.details||'')).toLowerCase();
-    if(error.code==='23503'||m.includes('foreign key')||m.includes('violates')){
-      alert('Akci nelze smazat — jsou na ni navázaní účastníci.\n\n'+
-            'Smazáním by lidé přišli o zapsaný výšlap, a tím i o nachozené kilometry a úroveň. '+
-            'Použijte místo toho tlačítko „Označit jako proběhlou“ — akce zmizí z nabídky, ale historie zůstane.\n\n'+
-            'Jde-li o testovací akci, odhlaste nejdřív účastníky a pak ji smažte.');
-    } else {
-      showToast('Chyba mazání: '+(error.message||'neznámá chyba'),true);
-    }
+
+  // Potvrzene ucasti = historie lidi (kilometry, uroven). Ty nikdy nemazeme potichu.
+  const pr=await db.from('participations').select('id').eq('event_id',id);
+  if(pr.error){showToast('Chyba: '+pr.error.message,true);return;}
+  if((pr.data||[]).length>0){
+    alert('Akci nelze smazat — má '+pr.data.length+' potvrzených účastí.\n\n'+
+          'Smazáním by lidé přišli o zapsaný výšlap, a tím i o nachozené kilometry a úroveň. '+
+          'Použijte „Označit jako proběhlou“ — akce zmizí z nabídky, ale historie zůstane.\n\n'+
+          'Jde-li o testovací akci, odškrtejte nejdřív potvrzené účasti v detailu akce.');
     return;
   }
-  showToast('Akce smazána');loadEvents();loadDashboard();
+
+  // Zadne ucasti - uklidime navazane radky, jinak to zablokuje cizi klic.
+  const zbytky=[];
+  for(const t of ['notification_log','ratings','bookings']){
+    const r=await db.from(t).delete().eq('event_id',id).select();
+    if(r.error){
+      // Tabulka nemusi existovat nebo na ni chybi pravidlo - zapamatujeme a reknem az na konci.
+      zbytky.push(t+': '+r.error.message);
+    }
+  }
+
+  const{data,error}=await db.from('events').delete().eq('id',id).select();
+  if(error){
+    alert('Akci se nepodařilo smazat.\n\n'+error.message+
+          (zbytky.length?'\n\nNavíc se nepodařilo uklidit:\n'+zbytky.join('\n'):''));
+    return;
+  }
+  if(!data||data.length===0){
+    alert('Akci se nepodařilo smazat — databáze mazání odmítla (RLS).'+
+          (zbytky.length?'\n\nDále:\n'+zbytky.join('\n'):''));
+    return;
+  }
+
+  showToast('Akce smazána');loadEvents();loadDashboard();loadBookings();
 }
 async function markPast(id){
   if(!confirm('Označit akci jako proběhlou?'))return;
