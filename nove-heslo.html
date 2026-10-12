@@ -145,7 +145,8 @@ formEl.addEventListener('submit', async (e) => {
 
   formEl.style.display = 'none';
   show('ok', 'Heslo bylo změněno. Vraťte se do aplikace a přihlaste se novým heslem.');
-  await client.auth.signOut();
+  // Zadny signOut() — vychozi rozsah je 'global' a zneplatnil by i relaci v aplikaci.
+  // persistSession je false, takze se v prohlizeci stejne nic neuklada.
 });
 </script>
 </body>
